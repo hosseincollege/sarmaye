@@ -1,0 +1,8 @@
+{% extends "admin/base.html" %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">مدیریت سایت</a>
+</h1>
+<a href="/dashboard/" class="button" style="margin-left:20px;">⬅ برگشت به داشبورد</a>
+{% endblock %}

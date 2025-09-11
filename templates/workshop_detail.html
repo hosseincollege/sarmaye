@@ -1,0 +1,29 @@
+{% load static %}
+<div class="container" style="max-width:900px;">
+    <h1>{{ workshop.name }}</h1>
+
+    {% if workshop.cover_image %}
+        <div style="margin-bottom:12px;">
+            <img src="{{ workshop.cover_image.url }}" alt="کاور" style="max-width:100%; height:auto; border-radius:6px;">
+        </div>
+    {% endif %}
+
+    <div class="field-row">
+        <strong>توضیحات:</strong>
+        <p>{{ workshop.description }}</p>
+    </div>
+
+    <div class="field-row"><strong>نمایندگی:</strong> {{ workshop.representative }}</div>
+    <div class="field-row"><strong>شماره تماس:</strong> {{ workshop.phone }}</div>
+    <div class="field-row"><strong>موقعیت:</strong> {{ workshop.location }}</div>
+    <div class="field-row"><strong>نوع محصول:</strong> {{ workshop.product_type }}</div>
+    <div class="field-row"><strong>سرمایه:</strong> {{ workshop.investment_needed }}</div>
+    <div class="field-row"><strong>درصد تامین شده:</strong> {{ workshop.funded_percentage }}%</div>
+    <div class="field-row"><strong>سود:</strong> {{ workshop.profit_percentage }}%</div>
+    <div class="field-row"><strong>مدت قرارداد:</strong> {{ workshop.duration_months }} ماه</div>
+    <div class="field-row"><strong>جزئیات قرارداد:</strong> {{ workshop.contract_details }}</div>
+
+    <div style="margin-top:16px;">
+        <a class="button-link secondary" href="{% url 'dashboard' %}">بازگشت به لیست</a>
+    </div>
+</div>
