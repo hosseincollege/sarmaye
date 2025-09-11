@@ -12,12 +12,14 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .serializers import UserSerializer
 
-# ===== Permission اختصاصی =====
+# ===== Permission =====
 class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return obj.owner == request.user
+        # صاحب یا سوپریوزر
+        return obj.owner == request.user or request.user.is_superuser
+
 
 # ===== Serializer ثبت نام =====
 class RegisterSerializer(ModelSerializer):
@@ -65,7 +67,10 @@ from .forms import WorkshopForm
 @permission_classes([IsAuthenticated])
 def current_user(request):
     serializer = UserSerializer(request.user)
-    return Response(serializer.data)
+    return Response({
+        **serializer.data,
+        "ip": request.real_ip  # ← آی‌پی واقعی
+    })
 
 @login_required
 def dashboard_view(request):

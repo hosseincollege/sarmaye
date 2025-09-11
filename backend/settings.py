@@ -64,6 +64,7 @@ REST_FRAMEWORK = {
 
 
 MIDDLEWARE = [
+    'backend.middleware.RealIPMiddleware',  # ✅ این کار درستیه
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
