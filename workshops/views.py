@@ -11,6 +11,8 @@ from .permissions import IsOwnerOrReadOnly
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .serializers import UserSerializer
+from django.conf import settings
+
 
 # ===== Permission =====
 class IsOwnerOrReadOnly(permissions.BasePermission):
@@ -63,14 +65,33 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import WorkshopForm
 
+
+from django.conf import settings
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from django.conf import settings
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def backend_info(request):
+    return Response({
+        "backend_env": "LOCAL" if settings.DEBUG else "SERVER",
+        "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown"))
+    })
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def current_user(request):
     serializer = UserSerializer(request.user)
     return Response({
         **serializer.data,
-        "ip": request.real_ip  # ← آی‌پی واقعی
+        "backend_env": "LOCAL" if settings.DEBUG else "SERVER",
+        "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown"))
     })
+
+
 
 @login_required
 def dashboard_view(request):

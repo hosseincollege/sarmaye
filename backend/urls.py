@@ -9,7 +9,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render
 from workshops.models import Workshop
-from workshops.views import current_user
+from workshops.views import current_user, backend_info
 from django.views.generic import TemplateView
 from workshops import views
 
@@ -37,6 +37,7 @@ router.register('workshops', WorkshopViewSet, basename='workshops')
 
 urlpatterns = [
     path('api/user/me/', current_user, name='current_user'),
+    path('api/backend-info/', backend_info, name='backend_info'),  # <== این خط جدید
     # صفحه اصلی → لاگین
     path('', auth_views.LoginView.as_view(template_name='login.html'), name='home'),
 
