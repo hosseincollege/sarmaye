@@ -77,6 +77,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://frnt-sarmaye.vercel.app/"
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 
