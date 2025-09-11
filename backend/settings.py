@@ -27,7 +27,8 @@ SECRET_KEY = 'django-insecure-sz933i0*=cw+xs-f74sz7+thj#5f$wd^4au^%(!4@p4ho+*_j=
 DEBUG = True
 
 
-ALLOWED_HOSTS = ['https://sarmaye-bknd.onrender.com/']
+ALLOWED_HOSTS = ['sarmaye-bknd.onrender.com']
+
 
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGIN_URL = '/login/'
