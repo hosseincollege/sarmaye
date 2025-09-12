@@ -17,6 +17,8 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 ENV_TYPE = os.getenv("ENV_TYPE", "LOCAL")
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -25,7 +27,7 @@ ENV_TYPE = os.getenv("ENV_TYPE", "LOCAL")
 SECRET_KEY = 'django-insecure-sz933i0*=cw+xs-f74sz7+thj#5f$wd^4au^%(!4@p4ho+*_j='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+
 
 
 ALLOWED_HOSTS = [

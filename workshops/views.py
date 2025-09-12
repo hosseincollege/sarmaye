@@ -77,7 +77,7 @@ from django.conf import settings
 @permission_classes([AllowAny])
 def backend_info(request):
     return Response({
-        "backend_env": "LOCAL" if settings.DEBUG else "SERVER",
+        "backend_env": settings.ENV_TYPE,
         "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown")),
         "is_superuser": bool(getattr(request.user, "is_superuser", False)),  # همیشه بده حتی وقتی لاگین نیست
         "is_authenticated": request.user.is_authenticated  # اضافه کردن وضعیت لاگین
