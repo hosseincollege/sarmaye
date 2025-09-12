@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from .models import Workshop, WorkshopImage
+from .models import Workshop
 from .serializers import WorkshopSerializer
 from rest_framework import generics
 from django.contrib.auth.models import User
@@ -64,6 +64,8 @@ class WorkshopViewSet(viewsets.ModelViewSet):
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import WorkshopForm
+
+
 
 
 from django.conf import settings
@@ -144,3 +146,29 @@ def workshop_delete_view(request, pk):
     if workshop.owner == request.user:
         workshop.delete()
     return redirect('dashboard')
+
+
+
+@login_required
+def workshop_create_view(request):
+    from .models import WorkshopImage  # اضافه شد چون اینجا نیاز داریم
+
+    if request.method == 'POST':
+        form = WorkshopForm(request.POST, request.FILES)
+        files = request.FILES.getlist('uploaded_images')
+        if form.is_valid():
+            workshop = form.save(commit=False)
+            workshop.owner = request.user
+            workshop.save()
+
+            for f in files:
+                WorkshopImage.objects.create(workshop=workshop, image=f)
+
+            return redirect('dashboard')
+    else:
+        form = WorkshopForm()
+
+    return render(request, 'workshop_form.html', {
+        'form': form,
+        'form_title': 'ایجاد کارگاه جدید'
+    })

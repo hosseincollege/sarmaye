@@ -1,25 +1,17 @@
 {% load static %}
-<div class="container" style="max-width:900px;">
-    <h1>{{ form_title }}</h1>
 
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+<h2>{{ form_title }}</h2>
 
-        {# اگر می‌خواهی کنترل تک‌تک فیلدها را داشته باشی، می‌توانی به صورت زیر لیبل و فیلدها را جدا کنی: #}
-        {% for field in form %}
-            <div class="field-row">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                    <small style="display:block;color:#666;margin-top:4px;">{{ field.help_text }}</small>
-                {% endif %}
-                {% for error in field.errors %}
-                    <div style="color:#b00020;font-size:0.95em;">{{ error }}</div>
-                {% endfor %}
-            </div>
-        {% endfor %}
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% for field in form %}
+        <div>
+            <label>{{ field.label }}</label>
+            {{ field }}
+        </div>
+    {% endfor %}
+    <button type="submit">ذخیره</button>
+</form>
 
-        <button type="submit">ذخیره</button>
-        <a class="button-link secondary" href="{% url 'dashboard' %}">بازگشت</a>
-    </form>
-</div>
+
+<a href="{% url 'dashboard' %}">بازگشت</a>

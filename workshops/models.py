@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Workshop(models.Model):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workshops')
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='کاربر')
     name = models.CharField(max_length=255, verbose_name="نام کارگاه")
     description = models.TextField(verbose_name="توضیحات")
     cover_image = models.ImageField(upload_to='workshops/', null=True, blank=True)
