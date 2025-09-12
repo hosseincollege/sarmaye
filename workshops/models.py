@@ -20,11 +20,12 @@ class Workshop(models.Model):
     def __str__(self):
         return self.name
 
+# models.py -> WorkshopImage class
+
 class WorkshopImage(models.Model):
     workshop = models.ForeignKey(Workshop, related_name='uploaded_images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='workshops/')
 
-
     def __str__(self):
-        return f"{self.workshop.title} - Image {self.id}"
-
+        # تغییر از title به name
+        return f"{self.workshop.name} - Image {self.id}"

@@ -1,18 +1,11 @@
 from django.contrib import admin
-from django.urls import path, include, re_path
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from workshops.views import WorkshopViewSet, RegisterView
+from workshops.views import WorkshopViewSet, RegisterView, current_user, backend_info
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.conf.urls.static import static
-from django.shortcuts import render
-from workshops.models import Workshop
-from workshops.views import current_user, backend_info
-from django.views.generic import TemplateView
-from workshops import views
-
 
 from workshops.views import (
     dashboard_view,
@@ -21,36 +14,35 @@ from workshops.views import (
     workshop_edit_view,
     workshop_delete_view
 )
-from django.contrib.auth import views as auth_views
-from django.contrib.auth.views import LogoutView
-
-
-# ویوی داشبورد (بعد از لاگین)
-@login_required
-def dashboard_view(request):
-    workshops = Workshop.objects.all()
-    return render(request, 'dashboard.html', {'workshops': workshops})
 
 # API Router
 router = DefaultRouter()
 router.register('workshops', WorkshopViewSet, basename='workshops')
 
 urlpatterns = [
-    path('api/user/me/', current_user, name='current_user'),
-    path('api/backend-info/', backend_info, name='backend_info'),  # <== این خط جدید
-    # صفحه اصلی → لاگین
-    path('', auth_views.LoginView.as_view(template_name='login.html'), name='home'),
+    # 1. ریدایرکت صفحه اصلی (/) به صفحه لاگین (/login/)
+    path('', auth_views.LoginView.as_view(
+        template_name='login.html',
+        redirect_authenticated_user=True  # اگر کاربر لاگین بود، او را به داشبورد بفرست
+    ), name='home'),
 
-    # داشبورد
+    # 2. صفحه لاگین اصلی
+    path('login/', auth_views.LoginView.as_view(
+        template_name='login.html',
+        redirect_authenticated_user=True  # این تنظیم کلیدی است!
+    ), name='login'),
+
+    # 3. صفحه خروج
+    path('logout/', auth_views.LogoutView.as_view(
+        next_page='login'  # بعد از خروج، به صفحه لاگین برو (و در آنجا بمان!)
+    ), name='logout'),
+
+    # داشبورد (نیاز به لاگین دارد)
     path('dashboard/', dashboard_view, name='dashboard'),
-    path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
-    path('logout/', LogoutView.as_view(next_page='/login/'), name='logout'),
-    path("api/public-info/", backend_info, name="public_backend_info"),
 
-
-    # عملیات کارگاه‌ها
-    path('workshops/<int:pk>/', workshop_detail_view, name='workshop_detail'),
+    # عملیات کارگاه‌ها (نیاز به لاگین دارد)
     path('workshops/create/', workshop_create_view, name='workshop_create'),
+    path('workshops/<int:pk>/', workshop_detail_view, name='workshop_detail'),
     path('workshops/<int:pk>/edit/', workshop_edit_view, name='workshop_edit'),
     path('workshops/<int:pk>/delete/', workshop_delete_view, name='workshop_delete'),
 
@@ -59,6 +51,8 @@ urlpatterns = [
 
     # API ها
     path('api/', include(router.urls)),
+    path('api/user/me/', current_user, name='current_user'),
+    path('api/backend-info/', backend_info, name='backend_info'),
     path('api/auth/register/', RegisterView.as_view(), name='register'),
     path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

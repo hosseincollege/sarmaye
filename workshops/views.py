@@ -81,9 +81,10 @@ def backend_info(request):
     return Response({
         "backend_env": settings.ENV_TYPE,
         "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown")),
-        "is_superuser": bool(getattr(request.user, "is_superuser", False)),  # همیشه بده حتی وقتی لاگین نیست
-        "is_authenticated": request.user.is_authenticated  # اضافه کردن وضعیت لاگین
+        "is_superuser": request.user.is_authenticated and request.user.is_superuser,
+        "is_authenticated": request.user.is_authenticated
     })
+
 
 
 
@@ -114,27 +115,39 @@ def workshop_detail_view(request, pk):
     return render(request, 'workshop_detail.html', {'workshop': workshop})
 
 
+# views.py (نسخه نهایی و تمیز شده)
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .forms import WorkshopForm
+from .models import WorkshopImage # مطمئن شوید این import وجود دارد
+
+# views.py (نسخه نهایی و منطقی)
+
+
+
+
 @login_required
 def workshop_create_view(request):
-    from .models import WorkshopImage  # اگه بالای فایل نیست
-
     if request.method == 'POST':
+        # فرم فقط با داده‌های مربوط به مدل Workshop مقداردهی می‌شود
         form = WorkshopForm(request.POST, request.FILES)
+        
         if form.is_valid():
             workshop = form.save(commit=False)
             workshop.owner = request.user
             workshop.save()
 
-            # ذخیره‌ی همه عکس‌های آپلود شده
-            for f in request.FILES.getlist('uploaded_images'):
+            # حالا که کارگاه ذخیره شده، مستقیماً از request فایل‌ها را می‌خوانیم
+            uploaded_files = request.FILES.getlist('uploaded_images') # نام فیلد در HTML
+            for f in uploaded_files:
                 WorkshopImage.objects.create(workshop=workshop, image=f)
-
-            # اگه cover_image جدا داری
-            if 'cover_image' in request.FILES:
-                workshop.cover_image = request.FILES['cover_image']
-                workshop.save()
-
+            
             return redirect('dashboard')
+        else:
+            # اگر فرم به خاطر فیلدهای مدل Workshop نامعتبر بود، خطا را چاپ کن
+            print("Form is not valid. Errors:", form.errors.as_json())
+
     else:
         form = WorkshopForm()
 
@@ -142,6 +155,11 @@ def workshop_create_view(request):
         'form': form,
         'form_title': 'ایجاد کارگاه جدید'
     })
+
+
+
+
+
 
 
 @login_required

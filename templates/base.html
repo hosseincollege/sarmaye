@@ -1,121 +1,201 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>مدیریت کارگاه‌ها</title>
-
-    <!-- اگر فونت فارسی محلی داری، آدرسش را اینجا بگذار -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- عنوان صفحه به صورت داینامیک از تمپلیت‌های فرزند گرفته می‌شود -->
+    <title>{% block title %}سیستم مدیریت کارگاه{% endblock %}</title>
+    
+    <!-- فونت وزیرمتن برای خوانایی بهتر فارسی -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+    
     <style>
-        :root {
-            --main-font: "Vazir", "Tahoma", "Segoe UI", sans-serif;
-        }
-        html, body {
-            direction: rtl;
-            text-align: right;
-            font-family: var(--main-font);
+        /* --- Reset and Base Styles --- */
+        body {
+            font-family: 'Vazirmatn', sans-serif;
             margin: 0;
-            padding: 0;
-            background: #fff;
-            color: #222;
-            line-height: 1.6;
-        }
-
-        header {
-            padding: 12px 20px;
-            background: #f5f5f5;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        nav a {
-            margin-left: 12px; /* چون راست‌چین است، فاصله از سمت چپ می‌آید */
-            color: #0366d6;
-            text-decoration: none;
+            background-color: #f8f9fa; /* رنگ پس‌زمینه روشن برای کل صفحه */
+            color: #212529;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         main {
-            max-width: 1000px;
-            margin: 20px auto;
-            padding: 16px;
-        }
-
-        .container {
-            direction: rtl;
-            text-align: right;
-        }
-
-        /* فرم‌ها */
-        form {
-            display: block;
+            flex-grow: 1; /* باعث می‌شود محتوای اصلی تمام فضای خالی را پر کند */
+            padding: 2rem 1rem;
             width: 100%;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-
-        input[type="text"],
-        input[type="file"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
             box-sizing: border-box;
-            font-family: inherit;
-            text-align: right;
         }
-
-        button, a.button-link {
-            display: inline-block;
-            padding: 8px 14px;
-            margin-top: 8px;
-            background: #1976d2;
-            color: white;
-            border-radius: 4px;
+        
+        a {
             text-decoration: none;
-            border: none;
-            cursor: pointer;
+            color: #007bff;
+        }
+        a:hover {
+            text-decoration: underline;
         }
 
-        .secondary {
-            background: #e0e0e0;
-            color: #111;
+        /* --- Header and Navigation Styles --- */
+        .main-header {
+            background-color: #ffffff;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .field-row {
-            margin-bottom: 12px;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 25px; /* فاصله بین لوگو و منو */
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #343a40;
         }
 
-        .files-list {
-            margin-top: 8px;
-            padding-right: 8px;
+        .main-nav ul {
+            margin: 0;
+            padding: 0;
             list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
-        .files-list li::before {
-            content: "📄 ";
-            margin-left: 6px;
+        .nav-link {
+            color: #495057;
+            font-weight: 500;
+            font-size: 1rem;
+            padding: 5px 0;
+            transition: color 0.2s;
         }
+        .nav-link:hover {
+            color: #0056b3;
+            text-decoration: none;
+        }
+        
+        /* استایل دکمه "ایجاد کارگاه جدید" در منو */
+        .btn-create-nav {
+            background-color: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .btn-create-nav:hover {
+            background-color: #218838;
+            color: white;
+            text-decoration: none;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* فاصله بین آیتم‌های سمت راست */
+        }
+
+        .user-info {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        /* --- Admin Panel Link Style --- */
+        .admin-panel-link {
+            color: #495057;
+            font-size: 0.9rem;
+            padding: 7px 12px; /* تنظیم پدینگ برای هماهنگی با دکمه خروج */
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            transition: all 0.2s;
+            background-color: #f8f9fa;
+        }
+        .admin-panel-link:hover {
+            background-color: #e9ecef;
+            text-decoration: none;
+            color: #000;
+        }
+
+        /* --- Logout Button Style (برای فرم خروج) --- */
+        .logout-btn {
+            background-color: #dc3545; /* رنگ قرمز برای عملیات خروج */
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-family: 'Vazirmatn', sans-serif; /* اطمینان از اعمال فونت */
+        }
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* --- Footer Styles --- */
+        .main-footer {
+            background-color: #343a40;
+            color: #f8f9fa;
+            text-align: center;
+            padding: 1rem;
+            margin-top: auto; /* فوتر را به پایین صفحه می‌چسباند */
+        }
+        
+        /* بلاک برای استایل‌های اضافی در هر صفحه */
+        {% block extra_head %}{% endblock %}
     </style>
 </head>
 <body>
-    <header>
-        <nav>
-            <a href="{% url 'logout' %}">خروج</a> |
-            <a href="{% url 'workshop_create' %}">ایجاد کارگاه جدید</a> |
-            <a href="/admin/">ورود به مدیریت ادمین</a> |
-            <a href="{% url 'dashboard' %}">داشبورد</a>
-        </nav>
+
+    <header class="main-header">
+        <div class="header-left">
+            <a href="{% url 'dashboard' %}" class="logo">پنل مدیریت</a>
+            <nav class="main-nav">
+                <ul>
+                    <!-- نمایش لینک داشبورد فقط اگر در صفحه داشبورد نباشیم -->
+                    {% if request.resolver_match.url_name != 'dashboard' %}
+                    <li><a href="{% url 'dashboard' %}" class="nav-link">داشبورد</a></li>
+                    {% endif %}
+                    <li><a href="{% url 'workshop_create' %}" class="btn-create-nav">ایجاد کارگاه جدید</a></li>
+                </ul>
+            </nav>
+        </div>
+        
+        <div class="header-right">
+            {% if user.is_authenticated %}
+                <span class="user-info">خوش آمدید، {{ user.username }}</span>
+                
+                <!-- لینک پنل ادمین فقط برای کاربران staff (مدیران) نمایش داده می‌شود -->
+                {% if user.is_staff %}
+                    <a href="/admin/" target="_blank" class="admin-panel-link">پنل ادمین</a>
+                {% endif %}
+
+                <!-- فرم خروج که درخواست POST ارسال می‌کند -->
+                <form action="{% url 'logout' %}" method="post" style="display: inline; margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn">خروج</button>
+                </form>
+            {% endif %}
+        </div>
     </header>
 
-    <main class="container">
+    <main>
         {% block content %}{% endblock %}
     </main>
+
+    <footer class="main-footer">
+        <p>&copy; تمامی حقوق برای سیستم مدیریت کارگاه محفوظ است. امروز: {% now "Y/m/d" %}</p>
+    </footer>
+
 </body>
 </html>
