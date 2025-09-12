@@ -113,18 +113,36 @@ def workshop_detail_view(request, pk):
     workshop = get_object_or_404(Workshop, pk=pk)
     return render(request, 'workshop_detail.html', {'workshop': workshop})
 
+
 @login_required
 def workshop_create_view(request):
+    from .models import WorkshopImage  # اگه بالای فایل نیست
+
     if request.method == 'POST':
         form = WorkshopForm(request.POST, request.FILES)
         if form.is_valid():
             workshop = form.save(commit=False)
             workshop.owner = request.user
             workshop.save()
+
+            # ذخیره‌ی همه عکس‌های آپلود شده
+            for f in request.FILES.getlist('uploaded_images'):
+                WorkshopImage.objects.create(workshop=workshop, image=f)
+
+            # اگه cover_image جدا داری
+            if 'cover_image' in request.FILES:
+                workshop.cover_image = request.FILES['cover_image']
+                workshop.save()
+
             return redirect('dashboard')
     else:
         form = WorkshopForm()
-    return render(request, 'workshop_form.html', {'form': form, 'form_title': 'ایجاد کارگاه جدید'})
+
+    return render(request, 'workshop_form.html', {
+        'form': form,
+        'form_title': 'ایجاد کارگاه جدید'
+    })
+
 
 @login_required
 def workshop_edit_view(request, pk):
@@ -147,28 +165,3 @@ def workshop_delete_view(request, pk):
         workshop.delete()
     return redirect('dashboard')
 
-
-
-@login_required
-def workshop_create_view(request):
-    from .models import WorkshopImage  # اضافه شد چون اینجا نیاز داریم
-
-    if request.method == 'POST':
-        form = WorkshopForm(request.POST, request.FILES)
-        files = request.FILES.getlist('uploaded_images')
-        if form.is_valid():
-            workshop = form.save(commit=False)
-            workshop.owner = request.user
-            workshop.save()
-
-            for f in files:
-                WorkshopImage.objects.create(workshop=workshop, image=f)
-
-            return redirect('dashboard')
-    else:
-        form = WorkshopForm()
-
-    return render(request, 'workshop_form.html', {
-        'form': form,
-        'form_title': 'ایجاد کارگاه جدید'
-    })

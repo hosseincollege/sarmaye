@@ -1,23 +1,26 @@
 {% extends "base.html" %}
 {% block title %}داشبورد{% endblock %}
 {% block content %}
-<table border="1">
-    <thead>
-        <tr>
-            <th>کاور</th>
-            <th>عنوان</th>
-            <th>عملیات</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for workshop in workshops %}
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>کاور</th>
+        <th>مسیر کاور (تست)</th>
+        <th>عنوان</th>
+        <th>عملیات</th>
+    </tr>
+    {% for workshop in workshops %}
         <tr>
             <td>
                 {% if workshop.cover_image %}
-                    <img src="{{ workshop.cover_image.url }}" width="80">
+                    <img src="{{ workshop.cover_image.url }}" alt="Cover Image" style="max-width:100px;">
                 {% else %}
                     بدون تصویر
                 {% endif %}
+            </td>
+            <td>
+                <!-- برای تست مسیر ذخیره -->
+                {{ workshop.cover_image }}
             </td>
             <td>{{ workshop.name }}</td>
             <td>
@@ -26,9 +29,11 @@
                 <a href="{% url 'workshop_delete' workshop.pk %}">حذف</a>
             </td>
         </tr>
-        {% empty %}
-        <tr><td colspan="3">هیچ کارگاهی وجود ندارد.</td></tr>
-        {% endfor %}
-    </tbody>
+    {% empty %}
+        <tr>
+            <td colspan="4">هیچ کارگاهی وجود ندارد.</td>
+        </tr>
+    {% endfor %}
 </table>
+
 {% endblock %}

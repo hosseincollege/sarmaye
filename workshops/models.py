@@ -24,5 +24,7 @@ class WorkshopImage(models.Model):
     workshop = models.ForeignKey(Workshop, related_name='uploaded_images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='workshops/')
 
+
     def __str__(self):
         return f"{self.workshop.title} - Image {self.id}"
+

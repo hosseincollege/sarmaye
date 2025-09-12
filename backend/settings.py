@@ -17,8 +17,8 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 ENV_TYPE = os.getenv("ENV_TYPE", "LOCAL")
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-
+#DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEBUG = True
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/

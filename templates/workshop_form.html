@@ -4,14 +4,39 @@
 
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
+    
     {% for field in form %}
         <div>
-            <label>{{ field.label }}</label>
+            {{ field.label_tag }}
             {{ field }}
+            {% if field.help_text %}
+                <small>{{ field.help_text }}</small>
+            {% endif %}
+            {% for error in field.errors %}
+                <p style="color:red;">{{ error }}</p>
+            {% endfor %}
         </div>
     {% endfor %}
+
+    <!-- نمایش کاور اگر وجود دارد -->
+    {% if form.instance.cover_image %}
+    <div>
+        <p>کاور فعلی:</p>
+        <img src="{{ form.instance.cover_image.url }}" alt="Cover Image" style="max-width: 200px">
+    </div>
+    {% endif %}
+
+    {% if form.instance.workshopimage_set.all %}
+    <div>
+        <p>عکس‌های گالری:</p>
+        {% for img in form.instance.workshopimage_set.all %}
+        <img src="{{ img.image.url }}" style="max-width: 150px;">
+        {% endfor %}
+    </div>
+    {% endif %}
+
+
     <button type="submit">ذخیره</button>
 </form>
-
 
 <a href="{% url 'dashboard' %}">بازگشت</a>
