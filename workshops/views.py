@@ -1,29 +1,43 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.response import Response
-from .models import Workshop
-from .serializers import WorkshopSerializer
-from rest_framework import generics
+# workshops/views.py
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from rest_framework.permissions import AllowAny
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.serializers import ModelSerializer
-from .permissions import IsOwnerOrReadOnly
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from .serializers import UserSerializer
 from django.conf import settings
+from django.http import Http404
 
+from rest_framework import viewsets, permissions, generics, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
+from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer
 
-# ===== Permission =====
-class IsOwnerOrReadOnly(permissions.BasePermission):
+from .models import Workshop, WorkshopImage
+from .serializers import WorkshopSerializer, UserSerializer
+from .forms import WorkshopForm
+
+from django.db import models
+
+# ===============================================
+# PERMISSIONS (برای API)
+# ===============================================
+
+class IsOwnerOrReadOnly(BasePermission):
+    """
+    اجازه دسترسی فقط به صاحب آبجکت برای ویرایش.
+    """
     def has_object_permission(self, request, view, obj):
+        # متدهای امن (GET, HEAD, OPTIONS) همیشه مجاز هستند.
         if request.method in permissions.SAFE_METHODS:
             return True
-        # صاحب یا سوپریوزر
+        # دسترسی برای نوشتن (Write) فقط برای صاحب آبجکت یا سوپریوزر مجاز است.
         return obj.owner == request.user or request.user.is_superuser
 
+# ===============================================
+# API VIEWS
+# ===============================================
 
-# ===== Serializer ثبت نام =====
+# --- API ثبت نام کاربر ---
 class RegisterSerializer(ModelSerializer):
     class Meta:
         model = User
@@ -38,148 +52,161 @@ class RegisterSerializer(ModelSerializer):
         )
         return user
 
-# ===== View ثبت نام =====
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = [AllowAny]
     serializer_class = RegisterSerializer
 
-# ===== ViewSet کارگاه =====
+# --- API کارگاه (Workshop) ---
 class WorkshopViewSet(viewsets.ModelViewSet):
-    queryset = Workshop.objects.all()
+    queryset = Workshop.objects.all().order_by('-created_at')
     serializer_class = WorkshopSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="زمان ایجاد")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="زمان به‌روزرسانی")
 
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        # می‌توانید برای مرتب‌سازی پیش‌فرض هم از این استفاده کنید
+        ordering = ['-created_at']
+        verbose_name = "کارگاه"
+        verbose_name_plural = "کارگاه‌ها"
+        
     def get_permissions(self):
+        """
+        تعیین دسترسی‌ها بر اساس اکشن (action).
+        - 'list' و 'retrieve': همه کاربران (حتی لاگین نکرده) می‌توانند ببینند.
+        - بقیه اکشن‌ها (create, update, delete): فقط کاربر لاگین کرده و مالک.
+        """
         if self.action in ['list', 'retrieve']:
-            permission_classes = [permissions.AllowAny]  # همه می‌بینند
+            self.permission_classes = [AllowAny]
         else:
-            permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]  # ورود + صاحب
-        return [permission() for permission in permission_classes]
+            self.permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+        return super().get_permissions()
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)  # مالک ثبت می‌شود
+        """
+        هنگام ایجاد یک کارگاه جدید، کاربر فعلی را به عنوان 'owner' ثبت می‌کند.
+        """
+        serializer.save(owner=self.request.user)
 
-# ===== ویوهای HTML =====
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from .forms import WorkshopForm
-
-
-
-
-from django.conf import settings
-
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from django.conf import settings
-
+# --- API های جانبی ---
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def backend_info(request):
+    """
+    اطلاعات کلی در مورد وضعیت بک‌اند را برمی‌گرداند.
+    """
     return Response({
-        "backend_env": settings.ENV_TYPE,
+        "backend_env": getattr(settings, 'ENV_TYPE', 'unknown'),
         "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown")),
-        "is_superuser": request.user.is_authenticated and request.user.is_superuser,
-        "is_authenticated": request.user.is_authenticated
     })
-
-
-
-
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def current_user(request):
+    """
+    اطلاعات کاربر لاگین کرده فعلی را برمی‌گرداند.
+    """
     serializer = UserSerializer(request.user)
-    return Response({
-        "username": request.user.username,
-        "email": request.user.email,
-        "backend_env": settings.ENV_TYPE,
-        "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown")),
-        "is_superuser": request.user.is_superuser
-    })
+    return Response(serializer.data)
 
-
+# ===============================================
+# HTML TEMPLATE VIEWS (ویوهای مربوط به صفحات وب)
+# ===============================================
 
 @login_required
 def dashboard_view(request):
-    workshops = Workshop.objects.all()
+    """
+    داشبورد کارگاه‌ها.
+    - ادمین: همه کارگاه‌ها را می‌بیند.
+    - کاربر عادی: فقط کارگاه‌های خودش را می‌بیند.
+    """
+    if request.user.is_staff or request.user.is_superuser:
+        workshops = Workshop.objects.all().order_by('-created_at')
+    else:
+        workshops = Workshop.objects.filter(owner=request.user).order_by('-created_at')
+    
     return render(request, 'dashboard.html', {'workshops': workshops})
 
 @login_required
 def workshop_detail_view(request, pk):
+    """
+    نمایش جزئیات یک کارگاه خاص.
+    کاربر باید مالک کارگاه یا ادمین باشد.
+    """
     workshop = get_object_or_404(Workshop, pk=pk)
+    # بررسی دسترسی: فقط مالک یا ادمین
+    if not (request.user == workshop.owner or request.user.is_staff or request.user.is_superuser):
+        raise Http404("شما اجازه دسترسی به این کارگاه را ندارید.")
     return render(request, 'workshop_detail.html', {'workshop': workshop})
-
-
-# views.py (نسخه نهایی و تمیز شده)
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from .forms import WorkshopForm
-from .models import WorkshopImage # مطمئن شوید این import وجود دارد
-
-# views.py (نسخه نهایی و منطقی)
-
-
-
 
 @login_required
 def workshop_create_view(request):
+    """
+    ویوی ایجاد کارگاه جدید.
+    """
     if request.method == 'POST':
-        # فرم فقط با داده‌های مربوط به مدل Workshop مقداردهی می‌شود
         form = WorkshopForm(request.POST, request.FILES)
-        
         if form.is_valid():
             workshop = form.save(commit=False)
             workshop.owner = request.user
             workshop.save()
-
-            # حالا که کارگاه ذخیره شده، مستقیماً از request فایل‌ها را می‌خوانیم
-            uploaded_files = request.FILES.getlist('uploaded_images') # نام فیلد در HTML
-            for f in uploaded_files:
+            # ذخیره تصاویر آپلود شده
+            for f in request.FILES.getlist('images'): # نام فیلد در فرم
                 WorkshopImage.objects.create(workshop=workshop, image=f)
-            
             return redirect('dashboard')
-        else:
-            # اگر فرم به خاطر فیلدهای مدل Workshop نامعتبر بود، خطا را چاپ کن
-            print("Form is not valid. Errors:", form.errors.as_json())
-
     else:
         form = WorkshopForm()
-
+    
     return render(request, 'workshop_form.html', {
         'form': form,
         'form_title': 'ایجاد کارگاه جدید'
     })
 
-
-
-
-
-
-
 @login_required
 def workshop_edit_view(request, pk):
+    """
+    ویوی ویرایش یک کارگاه موجود.
+    کاربر باید مالک کارگاه باشد.
+    """
     workshop = get_object_or_404(Workshop, pk=pk)
-    if workshop.owner != request.user:
-        return redirect('dashboard')
+    # بررسی دسترسی: فقط مالک یا ادمین
+    if not (request.user == workshop.owner or request.user.is_staff or request.user.is_superuser):
+        raise Http404("شما اجازه ویرایش این کارگاه را ندارید.")
+        
     if request.method == 'POST':
         form = WorkshopForm(request.POST, request.FILES, instance=workshop)
         if form.is_valid():
             form.save()
+            # مدیریت تصاویر: حذف تصاویر قدیمی یا اضافه کردن تصاویر جدید
+            # (این منطق می‌تواند در صورت نیاز پیچیده‌تر شود)
+            for f in request.FILES.getlist('images'):
+                WorkshopImage.objects.create(workshop=workshop, image=f)
             return redirect('dashboard')
     else:
         form = WorkshopForm(instance=workshop)
-    return render(request, 'workshop_form.html', {'form': form, 'form_title': 'ویرایش کارگاه'})
+        
+    return render(request, 'workshop_form.html', {
+        'form': form,
+        'form_title': 'ویرایش کارگاه'
+    })
 
 @login_required
 def workshop_delete_view(request, pk):
+    """
+    ویوی حذف کارگاه. فقط از طریق متد POST عمل می‌کند.
+    """
     workshop = get_object_or_404(Workshop, pk=pk)
-    if workshop.owner == request.user:
-        workshop.delete()
-    return redirect('dashboard')
+    # بررسی دسترسی: فقط مالک یا ادمین
+    if not (request.user == workshop.owner or request.user.is_staff or request.user.is_superuser):
+        raise Http404("شما اجازه حذف این کارگاه را ندارید.")
 
+    if request.method == 'POST':
+        workshop.delete()
+        return redirect('dashboard')
+    
+    # اگر متد GET بود، به جزئیات کارگاه برگردان (یا یک صفحه تایید حذف نشان بده)
+    return redirect('workshop_detail', pk=workshop.pk)

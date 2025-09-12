@@ -117,8 +117,13 @@
                     <p class="card-text">نوع محصول: {{ workshop.product_type }}</p>
                 </div>
                 <div class="card-footer">
-                    <a href="{% url 'workshop_edit' workshop.pk %}" class="btn-action btn-edit" onclick="event.stopPropagation();">ویرایش</a>
-                    <a href="{% url 'workshop_delete' workshop.pk %}" class="btn-action btn-delete" onclick="event.stopPropagation();">حذف</a>
+                    <div class="card-footer">
+                        <a href="{% url 'workshop_edit' workshop.pk %}" class="btn-action btn-edit" onclick="event.stopPropagation();">ویرایش</a>
+                        <form method="post" action="{% url 'workshop_delete' workshop.pk %}" style="display:inline;" onsubmit="event.stopPropagation();">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action btn-delete">حذف</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </a>
