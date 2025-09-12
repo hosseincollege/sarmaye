@@ -12,9 +12,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 
-from .models import Workshop, WorkshopImage
+from .models import Workshop, WorkshopImage # WorkshopImage را ایمپورت کنید
 from .serializers import WorkshopSerializer, UserSerializer
-from .forms import WorkshopForm
+from .forms import WorkshopForm, WorkshopImageFormSet # WorkshopImageFormSet را ایمپورت کنید
 
 from django.db import models
 
@@ -145,52 +145,53 @@ def workshop_detail_view(request, pk):
 
 @login_required
 def workshop_create_view(request):
-    """
-    ویوی ایجاد کارگاه جدید.
-    """
     if request.method == 'POST':
         form = WorkshopForm(request.POST, request.FILES)
         if form.is_valid():
             workshop = form.save(commit=False)
             workshop.owner = request.user
             workshop.save()
-            # ذخیره تصاویر آپلود شده
-            for f in request.FILES.getlist('images'): # نام فیلد در فرم
-                WorkshopImage.objects.create(workshop=workshop, image=f)
+
+            # پردازش چندعکس از یک input
+            images = request.FILES.getlist('images')
+            for img in images:
+                WorkshopImage.objects.create(workshop=workshop, image=img)
+
             return redirect('dashboard')
     else:
         form = WorkshopForm()
-    
+
     return render(request, 'workshop_form.html', {
-        'form': form,
-        'form_title': 'ایجاد کارگاه جدید'
+        'form': form
     })
+
 
 @login_required
 def workshop_edit_view(request, pk):
     """
-    ویوی ویرایش یک کارگاه موجود.
-    کاربر باید مالک کارگاه باشد.
+    ویوی ویرایش یک کارگاه موجود با پشتیبانی از آپلود چند تصویر.
     """
     workshop = get_object_or_404(Workshop, pk=pk)
-    # بررسی دسترسی: فقط مالک یا ادمین
+    
     if not (request.user == workshop.owner or request.user.is_staff or request.user.is_superuser):
         raise Http404("شما اجازه ویرایش این کارگاه را ندارید.")
         
     if request.method == 'POST':
-        form = WorkshopForm(request.POST, request.FILES, instance=workshop)
-        if form.is_valid():
-            form.save()
-            # مدیریت تصاویر: حذف تصاویر قدیمی یا اضافه کردن تصاویر جدید
-            # (این منطق می‌تواند در صورت نیاز پیچیده‌تر شود)
-            for f in request.FILES.getlist('images'):
-                WorkshopImage.objects.create(workshop=workshop, image=f)
+        workshop_form = WorkshopForm(request.POST, request.FILES, instance=workshop)
+        formset = WorkshopImageFormSet(request.POST, request.FILES, instance=workshop)
+        
+        if workshop_form.is_valid() and formset.is_valid():
+            workshop_form.save()
+            formset.save()
+            
             return redirect('dashboard')
     else:
-        form = WorkshopForm(instance=workshop)
+        workshop_form = WorkshopForm(instance=workshop)
+        formset = WorkshopImageFormSet(instance=workshop)
         
     return render(request, 'workshop_form.html', {
-        'form': form,
+        'form': workshop_form,
+        'formset': formset,
         'form_title': 'ویرایش کارگاه'
     })
 
