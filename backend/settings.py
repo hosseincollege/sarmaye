@@ -17,7 +17,6 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 ENV_TYPE = os.getenv("ENV_TYPE", "LOCAL")
-#DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 DEBUG = True
 
 # Quick-start development settings - unsuitable for production

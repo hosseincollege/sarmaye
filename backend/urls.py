@@ -45,6 +45,8 @@ urlpatterns = [
     path('dashboard/', dashboard_view, name='dashboard'),
     path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
     path('logout/', LogoutView.as_view(next_page='/login/'), name='logout'),
+    path("api/public-info/", backend_info, name="public_backend_info"),
+
 
     # عملیات کارگاه‌ها
     path('workshops/<int:pk>/', workshop_detail_view, name='workshop_detail'),
