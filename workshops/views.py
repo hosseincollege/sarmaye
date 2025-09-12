@@ -78,17 +78,24 @@ from django.conf import settings
 def backend_info(request):
     return Response({
         "backend_env": "LOCAL" if settings.DEBUG else "SERVER",
-        "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown"))
+        "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown")),
+        "is_superuser": (
+            request.user.is_authenticated and request.user.is_superuser
+        )
     })
+
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def current_user(request):
     serializer = UserSerializer(request.user)
     return Response({
-        **serializer.data,
-        "backend_env": "LOCAL" if settings.DEBUG else "SERVER",
-        "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown"))
+        "username": request.user.username,
+        "email": request.user.email,
+        "backend_env": settings.ENV_TYPE,
+        "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown")),
+        "is_superuser": request.user.is_superuser
     })
 
 
