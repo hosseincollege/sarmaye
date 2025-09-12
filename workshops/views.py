@@ -79,10 +79,11 @@ def backend_info(request):
     return Response({
         "backend_env": "LOCAL" if settings.DEBUG else "SERVER",
         "ip": getattr(request, "real_ip", request.META.get("REMOTE_ADDR", "unknown")),
-        "is_superuser": (
-            request.user.is_authenticated and request.user.is_superuser
-        )
+        "is_superuser": bool(getattr(request.user, "is_superuser", False)),  # همیشه بده حتی وقتی لاگین نیست
+        "is_authenticated": request.user.is_authenticated  # اضافه کردن وضعیت لاگین
     })
+
+
 
 
 
