@@ -4,8 +4,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.http import Http404, HttpResponseForbidden # برای خطای دسترسی بهتر است
-from django.db import transaction # برای اطمینان از ذخیره کامل یا هیچکدام
+from django.http import Http404, HttpResponseForbidden
+from django.db import transaction
+from django.contrib import messages
 
 from rest_framework import viewsets, permissions, generics, status
 from rest_framework.decorators import api_view, permission_classes
@@ -17,7 +18,6 @@ from .models import Workshop, WorkshopImage
 from .serializers import WorkshopSerializer, UserSerializer
 from .forms import WorkshopForm
 
-# ... (بخش API Views و Permissions شما بدون تغییر باقی می‌ماند) ...
 # ===============================================
 # PERMISSIONS (برای API)
 # ===============================================
@@ -80,7 +80,7 @@ def current_user(request):
     return Response(serializer.data)
 
 # ===============================================
-# HTML TEMPLATE VIEWS (بخش اصلاح شده)
+# HTML TEMPLATE VIEWS
 # ===============================================
 
 @login_required
@@ -98,30 +98,70 @@ def workshop_detail_view(request, pk):
         return HttpResponseForbidden("شما اجازه دسترسی به این کارگاه را ندارید.")
     return render(request, 'workshop_detail.html', {'workshop': workshop})
 
-# -- ویوی ایجاد کارگاه (اصلاح شده) --
 @login_required
-@transaction.atomic # تضمین می‌کند که تمام عملیات دیتابیس با هم انجام شوند
+@transaction.atomic
 def workshop_create_view(request):
     """
     ویوی ایجاد یک کارگاه جدید با آپلود چند تصویر.
     """
     if request.method == 'POST':
-        # فرم فقط مسئول فیلدهای مدل Workshop است
         form = WorkshopForm(request.POST, request.FILES)
+        
+        # Debug information
+        print("=== DEBUG CREATE WORKSHOP ===")
+        print("REQUEST METHOD:", request.method)
+        print("POST DATA:", dict(request.POST))
+        print("FILES RECEIVED:", dict(request.FILES))
+        
+        # گرفتن فایل‌ها از فرم
+        images_from_form = form.cleaned_data.get('images', []) if form.is_valid() else []
+        images_from_request = request.FILES.getlist('images')
+        
+        print("Images from form:", images_from_form)
+        print("Images from request:", images_from_request)
+        
         if form.is_valid():
-            # ابتدا آبجکت اصلی کارگاه را ذخیره می‌کنیم اما در دیتابیس ثبت نمی‌کنیم
-            # تا بتوانیم اول owner را به آن اختصاص دهیم.
+            print("Form is valid!")
+            
+            # ایجاد کارگاه
             workshop = form.save(commit=False)
             workshop.owner = request.user
-            workshop.save() # حالا کارگاه با مالک مشخص در دیتابیس ذخیره می‌شود
-
-            # حالا تصاویر آپلود شده را از فیلد مجازی 'images' می‌خوانیم
-            images = request.FILES.getlist('images')
-            for image_file in images:
-                WorkshopImage.objects.create(workshop=workshop, image=image_file)
-
-            # پس از ذخیره موفق همه چیز، به داشبورد هدایت می‌شویم
+            workshop.save()
+            
+            print(f"Workshop created with ID: {workshop.id}")
+            
+            # ذخیره تصاویر - استفاده از هر دو روش برای اطمینان
+            all_images = []
+            if images_from_form:
+                all_images.extend(images_from_form)
+            if images_from_request:
+                all_images.extend(images_from_request)
+            
+            # حذف تکراری‌ها
+            unique_images = []
+            for img in all_images:
+                if img and img not in unique_images:
+                    unique_images.append(img)
+            
+            print(f"Number of unique images to save: {len(unique_images)}")
+            
+            for i, image_file in enumerate(unique_images):
+                print(f"Saving image {i+1}: {image_file.name} (size: {image_file.size} bytes)")
+                try:
+                    workshop_image = WorkshopImage.objects.create(
+                        workshop=workshop, 
+                        image=image_file
+                    )
+                    print(f"Image saved with ID: {workshop_image.id}")
+                except Exception as e:
+                    print(f"Error saving image {i+1}: {str(e)}")
+            
+            messages.success(request, f'کارگاه "{workshop.title}" با موفقیت ایجاد شد!')
             return redirect('dashboard')
+        else:
+            print("Form is NOT valid!")
+            print("FORM ERRORS:", form.errors)
+            messages.error(request, 'خطا در ایجاد کارگاه. لطفاً اطلاعات را بررسی کنید.')
     else:
         form = WorkshopForm()
 
@@ -130,42 +170,64 @@ def workshop_create_view(request):
         'form_title': 'ایجاد کارگاه جدید'
     })
 
-# -- ویوی ویرایش کارگاه (اصلاح شده) --
 @login_required
-@transaction.atomic # تضمین می‌کند که تمام عملیات دیتابیس با هم انجام شوند
+@transaction.atomic
 def workshop_edit_view(request, pk):
     """
     ویوی ویرایش یک کارگاه موجود با پشتیبانی از آپلود چند تصویر اضافی.
     """
     workshop = get_object_or_404(Workshop, pk=pk)
 
-    # بررسی دسترسی: فقط مالک یا ادمین
     if not (request.user == workshop.owner or request.user.is_staff or request.user.is_superuser):
         return HttpResponseForbidden("شما اجازه ویرایش این کارگاه را ندارید.")
 
     if request.method == 'POST':
-        # فرم را با اطلاعات ارسال شده و فایل کاور پر می‌کنیم
         form = WorkshopForm(request.POST, request.FILES, instance=workshop)
-
+        
         if form.is_valid():
-            # فرم اصلی (اطلاعات متنی و کاور) را ذخیره می‌کنیم
-            form.save()
-
-            # تصاویر جدید آپلود شده را از فیلد مجازی 'images' به گالری اضافه می‌کنیم
-            new_images = request.FILES.getlist('images')
-            for img in new_images:
-                WorkshopImage.objects.create(workshop=workshop, image=img)
+            print("Form is valid for editing!")
             
-            # در اینجا می‌توانید منطق حذف تصاویر قدیمی را هم اضافه کنید اگر نیاز باشد
-
+            # ذخیره تغییرات کارگاه
+            form.save()
+            
+            # اضافه کردن تصاویر جدید
+            images_from_form = form.cleaned_data.get('images', [])
+            images_from_request = request.FILES.getlist('images')
+            
+            all_new_images = []
+            if images_from_form:
+                all_new_images.extend(images_from_form)
+            if images_from_request:
+                all_new_images.extend(images_from_request)
+            
+            # حذف تکراری‌ها
+            unique_new_images = []
+            for img in all_new_images:
+                if img and img not in unique_new_images:
+                    unique_new_images.append(img)
+            
+            print(f"Number of new images to add: {len(unique_new_images)}")
+            
+            for i, img in enumerate(unique_new_images):
+                print(f"Adding new image {i+1}: {img.name}")
+                try:
+                    workshop_image = WorkshopImage.objects.create(workshop=workshop, image=img)
+                    print(f"New image saved with ID: {workshop_image.id}")
+                except Exception as e:
+                    print(f"Error saving new image {i+1}: {str(e)}")
+            
+            messages.success(request, f'کارگاه "{workshop.title}" با موفقیت ویرایش شد!')
             return redirect('dashboard')
+        else:
+            print("Form is NOT valid for editing!")
+            print("FORM ERRORS:", form.errors)
+            messages.error(request, 'خطا در ویرایش کارگاه. لطفاً اطلاعات را بررسی کنید.')
     else:
-        # فرم را با اطلاعات فعلی کارگاه نمایش می‌دهیم
         form = WorkshopForm(instance=workshop)
 
     return render(request, 'workshop_form.html', {
         'form': form,
-        'workshop': workshop,  # ارسال شیء کارگاه برای نمایش تصاویر فعلی در تمپلیت
+        'workshop': workshop,
         'form_title': 'ویرایش کارگاه'
     })
 
@@ -176,7 +238,9 @@ def workshop_delete_view(request, pk):
         return HttpResponseForbidden("شما اجازه حذف این کارگاه را ندارید.")
 
     if request.method == 'POST':
+        workshop_title = workshop.title
         workshop.delete()
+        messages.success(request, f'کارگاه "{workshop_title}" با موفقیت حذف شد!')
         return redirect('dashboard')
 
     return redirect('workshop_detail', pk=workshop.pk)

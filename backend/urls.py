@@ -1,9 +1,10 @@
 # backend/urls.py
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, reverse_lazy
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
 
 # وارد کردن ویوهای احراز هویت آماده جنگو
 from django.contrib.auth import views as auth_views
@@ -29,8 +30,12 @@ urlpatterns = [
     # بخش URL های مربوط به صفحات وب (SSR) با سیستم ورود/خروج
     # ==============================================================================
 
-    # صفحه اصلی سایت به داشبورد هدایت می‌شود (این مسیر نیاز به لاگین خواهد داشت)
-    path('', workshop_views.dashboard_view, name='dashboard'),
+    # تغییر ۱: مسیر ریشه سایت (/) کاربر را به صفحه لاگین هدایت می‌کند.
+    # اگر کاربر لاگین باشد، به طور خودکار به داشبورد می‌رود.
+    path('', RedirectView.as_view(url=reverse_lazy('login'), permanent=False), name='home'),
+
+    # تغییر ۲: مسیر داشبورد به صراحت تعریف شده است.
+    path('dashboard/', workshop_views.dashboard_view, name='dashboard'),
 
     # URL های مربوط به مدیریت کارگاه‌ها (ایجاد، مشاهده جزئیات، ویرایش، حذف)
     path('workshops/create/', workshop_views.workshop_create_view, name='workshop_create'),
@@ -41,10 +46,12 @@ urlpatterns = [
     # URL های جدید برای ورود و خروج کاربران
     path('login/', auth_views.LoginView.as_view(
         template_name='login.html',
-        redirect_authenticated_user=True  # اگر کاربر قبلا لاگین کرده بود، او را به داشبورد هدایت کن
+        # اگر کاربر قبلا لاگین کرده بود، او را به داشبورد هدایت کن
+        # این مقدار در settings.py با LOGIN_REDIRECT_URL = '/dashboard/' تنظیم می‌شود
+        redirect_authenticated_user=True  
     ), name='login'),
 
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'), # بعد از خروج به آدرسی که در settings.py مشخص شده (LOGOUT_REDIRECT_URL) می‌رود
+    path('logout/', auth_views.LogoutView.as_view(next_page=reverse_lazy('login')), name='logout'),
 
     # ==============================================================================
     # بخش URL های مربوط به API (بدون تغییر)

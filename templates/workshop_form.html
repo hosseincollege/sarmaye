@@ -3,7 +3,8 @@
 
 {% block title %}{{ form_title|default:"ایجاد کارگاه جدید" }}{% endblock %}
 
-{% block extra_head %}
+{% block head %}
+    {# مسیر صحیح فایل‌های CSS و JS با توجه به ساختار پروژه شما #}
     <link rel="stylesheet" href="{% static 'css/workshop_form.css' %}">
 {% endblock %}
 
@@ -14,51 +15,110 @@
         <a href="{% url 'dashboard' %}" class="btn-back">بازگشت به داشبورد</a>
     </div>
 
-    <form method="post" enctype="multipart/form-data" novalidate>
+    <form method="post" enctype="multipart/form-data" class="workshop-form" novalidate>
         {% csrf_token %}
+        
         <div class="form-grid">
-
-            {% for field in form %}
-                {# فیلد تصاویر را اینجا نمایش نمی‌دهیم، چون بخش مخصوص خودش را دارد #}
-                {% if field.name != 'images' %}
-                    <div class="form-group {% if field.name == 'description' %}full-width{% endif %}">
-                        {{ field.label_tag }}
-                        {{ field }}
-                        {% if field.help_text %}
-                            <small class="help-text">{{ field.help_text }}</small>
-                        {% endif %}
-                        {% for error in field.errors %}
-                            <p class="error-text">{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endfor %}
-
-            <!-- ======================================================= -->
-            <!--             بخش اصلی و مهم آپلود فایل                  -->
-            <!-- ======================================================= -->
-            <div class="form-group full-width">
-                <label>تصاویر کارگاه</label>
-
-                <!-- این همان کادری است که کاربر روی آن کلیک می‌کند -->
-                <div class="file-input-container" id="file-upload-area">
-                    <span class="file-input-icon">🖼️</span>
-                    <span class="file-input-label">برای انتخاب تصاویر کلیک کنید یا فایل‌ها را اینجا رها کنید</span>
-                    <span id="selected-files-count" class="selected-files-count">هیچ فایلی انتخاب نشده است.</span>
+            
+            {# --- نمایش خطاهای کلی فرم (اگر وجود داشته باشد) --- #}
+            {% if form.non_field_errors %}
+                <div class="full-width">
+                    {% for error in form.non_field_errors %}
+                        <div class="error-message non-field-error">{{ error }}</div>
+                    {% endfor %}
                 </div>
+            {% endif %}
 
-                <!-- این بخش نام فایل‌های انتخاب شده را نمایش می‌دهد -->
-                <ul id="selected-files-list" class="selected-files-list"></ul>
+            {# --- ردیف اول: عنوان و مالک --- #}
+            <div class="form-group">
+                {{ form.title.label_tag }}
+                {{ form.title }}
+                {% for error in form.title.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
 
-                <!-- !!! مهم‌ترین خط کد !!! -->
-                <!-- این خط، تگ input مخفی با id="id_images" را می‌سازد -->
+            <div class="form-group">
+                {{ form.owner.label_tag }}
+                {{ form.owner }}
+                {% for error in form.owner.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+
+            {# --- ردیف دوم: نمایندگی و شماره تماس --- #}
+            <div class="form-group">
+                {{ form.agency.label_tag }}
+                {{ form.agency }}
+                {% for error in form.agency.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.contact_number.label_tag }}
+                {{ form.contact_number }}
+                {% for error in form.contact_number.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+
+            {# --- ردیف سوم: موقعیت و نوع محصول --- #}
+             <div class="form-group">
+                {{ form.location.label_tag }}
+                {{ form.location }}
+                {% for error in form.location.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+            
+             <div class="form-group">
+                {{ form.product_type.label_tag }}
+                {{ form.product_type }}
+                {% for error in form.product_type.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+
+            {# --- ردیف چهارم: سرمایه و درصد سود --- #}
+            <div class="form-group">
+                {{ form.required_capital.label_tag }}
+                {{ form.required_capital }}
+                {% for error in form.required_capital.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.profit_percentage.label_tag }}
+                {{ form.profit_percentage }}
+                {% for error in form.profit_percentage.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+            
+            {# --- ردیف پنجم: مدت قرارداد --- #}
+            <div class="form-group">
+                {{ form.contract_duration.label_tag }}
+                {{ form.contract_duration }}
+                {% for error in form.contract_duration.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+
+            {# --- فیلدهای تمام-عرض --- #}
+            <div class="form-group full-width">
+                {{ form.description.label_tag }}
+                {{ form.description }}
+                {% for error in form.description.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="form-group full-width">
+                {{ form.contract_details.label_tag }}
+                {{ form.contract_details }}
+                {% for error in form.contract_details.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+
+            {# --- ردیف آخر: آپلود فایل‌ها --- #}
+            <div class="form-group">
+                {{ form.cover_image.label_tag }}
+                {{ form.cover_image }}
+                {% for error in form.cover_image.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.images.label_tag }}
+                
+                {# این اینپوت اصلی است که ما آن را مخفی نمی‌کنیم بلکه با CSS ظاهرش را تغییر می‌دهیم #}
                 {{ form.images }}
 
-                {% for error in form.images.errors %}
-                    <p class="error-text">{{ error }}</p>
-                {% endfor %}
+                {% if form.images.help_text %}
+                <small class="help-text">{{ form.images.help_text }}</small>
+                {% endif %}
+                {% for error in form.images.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
             </div>
-            <!-- ======================================================= -->
 
         </div>
 
@@ -68,6 +128,6 @@
     </form>
 </div>
 
-<!-- اسکریپت باید در انتهای بلاک content باشد -->
-<script src="{% static 'js/workshop_form.js' %}"></script>
+{# این اسکریپت در صورتی لود می‌شود که فایل مربوطه در static/js/ وجود داشته باشد #}
+{# <script src="{% static 'js/workshop_form.js' %}"></script> #}
 {% endblock %}
