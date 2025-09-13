@@ -79,6 +79,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    "https://frnt-sarmaye.vercel.app"
+]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://frnt-sarmaye.vercel.app"
@@ -146,17 +150,18 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+
+# آدرس پوشه‌ای که فایل‌های استاتیک پروژه شما در آن قرار دارد (css, js, ...)
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# آدرسی که فایل‌های استاتیک هنگام اجرای دستور collectstatic در آن جمع‌آوری می‌شوند
+# این برای دیپلوی نهایی (production) لازم است
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# STATICFILES_DIRS = [BASE_DIR / "static"]
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-STATIC_URL = '/static/'
-
-# فقط اگه خارج از اپ‌ها static داری
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]

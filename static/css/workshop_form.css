@@ -159,3 +159,71 @@ select:focus {
     font-size: 0.95rem;
     color: #777;
 }
+
+.selected-files-list {
+    margin-top: 10px;
+    padding-right: 0;
+    list-style: none;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.selected-files-list li {
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
+}
+
+/* workshop_form.css */
+
+/* ... کدهای قبلی شما ... */
+
+/* استایل‌های بخش سفارشی آپلود فایل */
+.file-input-container {
+    border: 2px dashed #ced4da;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.file-input-container:hover {
+    border-color: #007bff;
+    background-color: #e9f5ff;
+}
+
+.file-input-label {
+    display: block;
+    font-size: 1rem;
+    color: #495057;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.selected-files-count {
+    display: block;
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.selected-files-list {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 15px;
+    max-height: 150px; /* ارتفاع حداکثر برای جلوگیری از دراز شدن لیست */
+    overflow-y: auto;  /* افزودن اسکرول در صورت زیاد بودن فایل‌ها */
+    text-align: right;
+}
+
+.selected-files-list li {
+    background-color: #e9ecef;
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+    color: #343a40;
+    direction: ltr; /* برای نمایش صحیح نام فایل‌های انگلیسی */
+    text-align: left;
+}

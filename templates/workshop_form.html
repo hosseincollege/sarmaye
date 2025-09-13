@@ -1,45 +1,64 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ form_title }}{% endblock %}
-{% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/workshop_form.css' %}">
-<script src="{% static 'js/workshop_form.js' %}" defer></script>
-{% endblock %}
-{% block content %}
 
+{% block title %}{{ form_title|default:"ایجاد کارگاه جدید" }}{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'css/workshop_form.css' %}">
+{% endblock %}
+
+{% block content %}
 <div class="form-container">
     <div class="form-header">
-        <h1>{{ form_title }}</h1>
-        <a href="{% url 'dashboard' %}" class="btn-back">بازگشت</a>
+        <h1>{{ form_title|default:"ایجاد کارگاه جدید" }}</h1>
+        <a href="{% url 'dashboard' %}" class="btn-back">بازگشت به داشبورد</a>
     </div>
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         <div class="form-grid">
 
             {% for field in form %}
-                {% if field.name != 'owner' or request.user.is_staff or request.user.is_superuser %}
-                    <div class="form-group {% if field.field.widget.input_type == 'file' %}full-width{% endif %}">
-                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        {{ field }}  {# بدون attrs اضافی #}
+                {# فیلد تصاویر را اینجا نمایش نمی‌دهیم، چون بخش مخصوص خودش را دارد #}
+                {% if field.name != 'images' %}
+                    <div class="form-group {% if field.name == 'description' %}full-width{% endif %}">
+                        {{ field.label_tag }}
+                        {{ field }}
                         {% if field.help_text %}
-                            <small>{{ field.help_text }}</small>
+                            <small class="help-text">{{ field.help_text }}</small>
                         {% endif %}
                         {% for error in field.errors %}
-                            <div class="errorlist">{{ error }}</div>
+                            <p class="error-text">{{ error }}</p>
                         {% endfor %}
                     </div>
                 {% endif %}
             {% endfor %}
 
+            <!-- ======================================================= -->
+            <!--             بخش اصلی و مهم آپلود فایل                  -->
+            <!-- ======================================================= -->
             <div class="form-group full-width">
                 <label>تصاویر کارگاه</label>
-                <label class="file-input-container">
-                    <span class="file-input-label">برای انتخاب تصاویر کلیک کنید</span>
-                    <input type="file" id="images" name="images" multiple>
-                    <span class="selected-files-count" id="file-count">هیچ فایلی انتخاب نشده است.</span>
-                </label>
+
+                <!-- این همان کادری است که کاربر روی آن کلیک می‌کند -->
+                <div class="file-input-container" id="file-upload-area">
+                    <span class="file-input-icon">🖼️</span>
+                    <span class="file-input-label">برای انتخاب تصاویر کلیک کنید یا فایل‌ها را اینجا رها کنید</span>
+                    <span id="selected-files-count" class="selected-files-count">هیچ فایلی انتخاب نشده است.</span>
+                </div>
+
+                <!-- این بخش نام فایل‌های انتخاب شده را نمایش می‌دهد -->
+                <ul id="selected-files-list" class="selected-files-list"></ul>
+
+                <!-- !!! مهم‌ترین خط کد !!! -->
+                <!-- این خط، تگ input مخفی با id="id_images" را می‌سازد -->
+                {{ form.images }}
+
+                {% for error in form.images.errors %}
+                    <p class="error-text">{{ error }}</p>
+                {% endfor %}
             </div>
+            <!-- ======================================================= -->
 
         </div>
 
@@ -49,4 +68,6 @@
     </form>
 </div>
 
+<!-- اسکریپت باید در انتهای بلاک content باشد -->
+<script src="{% static 'js/workshop_form.js' %}"></script>
 {% endblock %}

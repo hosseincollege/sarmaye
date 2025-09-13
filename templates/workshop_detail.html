@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}جزئیات: {{ workshop.name }}{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/workshop_detail.css' %}">
+    <link rel="stylesheet" href="{% static 'css/workshop_detail.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="detail-container">
-    
+
     <div class="detail-header">
         <h1>{{ workshop.name }}</h1>
         <a href="{% url 'dashboard' %}" class="back-link">بازگشت به داشبورد</a>
@@ -26,11 +27,12 @@
         <p><strong>شماره تماس:</strong> {{ workshop.phone }}</p>
         <p><strong>موقعیت:</strong> {{ workshop.location }}</p>
         <p><strong>نوع محصول:</strong> {{ workshop.product_type }}</p>
-        <p><strong>سرمایه مورد نیاز:</strong> {{ workshop.investment_needed }} تومان</p>
+        <p><strong>سرمایه مورد نیاز:</strong> {{ workshop.investment_needed|floatformat:"0" }} تومان</p>
         <p><strong>درصد تامین شده:</strong> {{ workshop.funded_percentage }}٪</p>
         <p><strong>درصد سود:</strong> {{ workshop.profit_percentage }}٪</p>
         <p><strong>مدت قرارداد:</strong> {{ workshop.duration_months }} ماه</p>
         <p><strong>جزئیات قرارداد:</strong> {{ workshop.contract_details|linebreaksbr }}</p>
     </div>
+
 </div>
 {% endblock %}
