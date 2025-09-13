@@ -19,13 +19,13 @@
             <a href="{% url 'workshop_detail' workshop.pk %}" class="card-link">
                 <div class="card-image-container">
                     {% if workshop.cover_image %}
-                        <img src="{{ workshop.cover_image.url }}" alt="{{ workshop.name }}">
+                        <img src="{{ workshop.cover_image.url }}" alt="{{ workshop.title }}">
                     {% else %}
                         <div class="no-image-placeholder">بدون تصویر کاور</div>
                     {% endif %}
                 </div>
                 <div class="card-body">
-                    <h3 class="card-title">{{ workshop.name }}</h3>
+                    <h3 class="card-title">{{ workshop.title }}</h3>
                     <p class="card-text">نوع محصول: {{ workshop.product_type }}</p>
                 </div>
             </a>
