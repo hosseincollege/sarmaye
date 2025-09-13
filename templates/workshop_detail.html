@@ -1,38 +1,68 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}جزئیات: {{ workshop.name }}{% endblock %}
+{% block title %}جزئیات: {{ workshop.title }}{% endblock %}
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'css/workshop_detail.css' %}">
+    <link rel="stylesheet" href="{% static 'css/modal.css' %}"> {# این خط را برای استایل مودال اضافه کنید #}
 {% endblock %}
 
 {% block content %}
 <div class="detail-container">
-
     <div class="detail-header">
-        <h1>{{ workshop.name }}</h1>
-        <a href="{% url 'dashboard' %}" class="back-link">بازگشت به داشبورد</a>
+        <h1>{{ workshop.title }}</h1>
+        <a href="{% url 'dashboard' %}" class="back-link">بازگشت به لیست</a>
     </div>
 
     <div class="detail-content">
         {% if workshop.cover_image %}
-            <img src="{{ workshop.cover_image.url }}" alt="کاور {{ workshop.name }}">
+            <img src="{{ workshop.cover_image.url }}" alt="کاور {{ workshop.title }}">
         {% else %}
             <div class="no-image-placeholder">بدون تصویر کاور</div>
         {% endif %}
 
         <p><strong>توضیحات:</strong> {{ workshop.description|linebreaksbr }}</p>
-        <p><strong>نمایندگی:</strong> {{ workshop.representative }}</p>
-        <p><strong>شماره تماس:</strong> {{ workshop.phone }}</p>
+        <p><strong>نمایندگی:</strong> {{ workshop.agency }}</p>
+        <p><strong>شماره تماس:</strong> {{ workshop.contact_number }}</p>
         <p><strong>موقعیت:</strong> {{ workshop.location }}</p>
         <p><strong>نوع محصول:</strong> {{ workshop.product_type }}</p>
-        <p><strong>سرمایه مورد نیاز:</strong> {{ workshop.investment_needed|floatformat:"0" }} تومان</p>
-        <p><strong>درصد تامین شده:</strong> {{ workshop.funded_percentage }}٪</p>
+        <p><strong>سرمایه مورد نیاز:</strong> {{ workshop.required_capital|floatformat:"0" }} تومان</p>
         <p><strong>درصد سود:</strong> {{ workshop.profit_percentage }}٪</p>
-        <p><strong>مدت قرارداد:</strong> {{ workshop.duration_months }} ماه</p>
+        <p><strong>مدت قرارداد:</strong> {{ workshop.contract_duration }} ماه</p>
         <p><strong>جزئیات قرارداد:</strong> {{ workshop.contract_details|linebreaksbr }}</p>
     </div>
 
+    {% if workshop.images.all %}
+    <div class="gallery-section">
+        <h3>گالری تصاویر</h3>
+        <div class="gallery-grid">
+            {% for img in workshop.images.all %}
+                <div class="gallery-item">
+                    {# تگ 'a' حذف شد و کلاس 'modal-trigger' به تگ 'img' اضافه شد #}
+                    <img src="{{ img.image.url }}" alt="تصویر گالری برای {{ workshop.title }}" class="modal-trigger">
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="gallery-section">
+        <h3>گالری تصاویر</h3>
+        <p>هیچ تصویر اضافی برای این کارگاه وجود ندارد.</p>
+    </div>
+    {% endif %}
 </div>
+
+<!-- ======================= HTML مودال - این بخش را اضافه کنید ======================= -->
+<div id="imageModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="modalImage">
+    <div id="caption"></div>
+</div>
+<!-- ============================================================================== -->
+
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/modal.js' %}"></script> {# این خط را برای کدهای جاوااسکریپت اضافه کنید #}
 {% endblock %}

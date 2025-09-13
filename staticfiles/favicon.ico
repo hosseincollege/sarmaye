@@ -1,0 +1,5 @@
+<!-- base.html -->
+<head>
+    <!-- ... تگ‌های دیگر ... -->
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+</head>

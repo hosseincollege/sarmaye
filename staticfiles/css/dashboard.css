@@ -1,0 +1,161 @@
+/* ساختار کلی داشبورد */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+/* هدر داشبورد */
+.dashboard-header {
+    display: flex;
+    justify-content: center; /* وسط‌چینی افقی عنوان */
+    align-items: center;     /* وسط‌چینی عمودی عنوان */
+    position: relative;      /* برای جای‌گذاری دکمه سمت راست */
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #dde1e6;
+}
+
+.dashboard-header h1 {
+    font-size: 2.8rem;
+    color: #1a2a3a;
+    margin: 0;
+    text-align: center; /* وسط‌چینی متن عنوان */
+}
+
+/* دکمه ایجاد کارگاه جدید */
+.dashboard-header .btn-create {
+    position: absolute;
+    right: 0; /* سمت راست هدر */
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 14px 28px;
+    background-color: #2ecc71;
+    color: white;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 15px rgba(46, 204, 113, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dashboard-header .btn-create:hover {
+    background-color: #27ae60;
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
+}
+
+/* گرید کارت‌ها */
+.workshops-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+/* کارت */
+.workshop-card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.workshop-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* لینک روی کل کارت */
+.card-link {
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+/* تصویر کارت */
+.card-image-container {
+    height: 180px;
+    overflow: hidden;
+    background-color: #f5f5f5;
+}
+
+.card-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.workshop-card:hover .card-image-container img {
+    transform: scale(1.05);
+}
+
+/* محتوای کارت */
+.card-body {
+    padding: 15px;
+    flex-grow: 1;
+}
+
+.card-title {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.card-text {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* فوتر کارت */
+.card-footer {
+    padding: 10px 15px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #eee;
+}
+
+.btn-action {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
+}
+
+.btn-edit {
+    background-color: #f39c12;
+}
+
+.btn-edit:hover {
+    background-color: #e67e22;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+/* وقتی هیچ کارگاهی نیست */
+.no-workshops {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    background-color: #fff;
+    border: 2px dashed #ccc;
+    border-radius: 12px;
+}

@@ -9,8 +9,8 @@ from django.views.generic import RedirectView
 # وارد کردن ویوهای احراز هویت آماده جنگو
 from django.contrib.auth import views as auth_views
 
-# وارد کردن ویوهای اپلیکیشن workshops
-from workshops import views as workshop_views
+# دیگر نیازی به ایمپورت تمام ویوهای workshop در اینجا نیست
+# from workshops import views as workshop_views 
 
 # وارد کردن ویوهای API و Router
 from workshops.views import WorkshopViewSet, RegisterView, current_user, backend_info
@@ -19,38 +19,36 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 # راه‌اندازی API Router
 router = DefaultRouter()
-router.register('workshops', WorkshopViewSet, basename='workshops')
+router.register('workshops', WorkshopViewSet, basename='workshops-api') # تغییر نام برای جلوگیری از تداخل
+
+from workshops import views
 
 # الگوهای URL
 urlpatterns = [
-    # URL پنل ادمین جنگو
     path('admin/', admin.site.urls),
 
     # ==============================================================================
-    # بخش URL های مربوط به صفحات وب (SSR) با سیستم ورود/خروج
+    # بخش URL های مربوط به صفحات وب (SSR)
     # ==============================================================================
 
-    # تغییر ۱: مسیر ریشه سایت (/) کاربر را به صفحه لاگین هدایت می‌کند.
-    # اگر کاربر لاگین باشد، به طور خودکار به داشبورد می‌رود.
+    # کاربر را از ریشه به صفحه لاگین هدایت کن
     path('', RedirectView.as_view(url=reverse_lazy('login'), permanent=False), name='home'),
 
-    # تغییر ۲: مسیر داشبورد به صراحت تعریف شده است.
-    path('dashboard/', workshop_views.dashboard_view, name='dashboard'),
+    # === تغییر اصلی: استفاده از include برای URL های اپلیکیشن workshops ===
+    # تمام URL های با پیشوند /workshops به فایل workshops.urls فرستاده می شوند
+    path('workshops/', views.dashboard_view, name='workshop_list'),
+    path('workshops/<int:pk>/', views.workshop_detail_view, name='workshop_detail'),
+    path('workshops/create/', views.workshop_create_view, name='workshop_create'),
+    path('workshops/<int:pk>/edit/', views.workshop_edit_view, name='workshop_edit'),
+    path('workshops/<int:pk>/delete/', views.workshop_delete_view, name='workshop_delete'),
 
-    # URL های مربوط به مدیریت کارگاه‌ها (ایجاد، مشاهده جزئیات، ویرایش، حذف)
-    path('workshops/create/', workshop_views.workshop_create_view, name='workshop_create'),
-    path('workshops/<int:pk>/', workshop_views.workshop_detail_view, name='workshop_detail'),
-    path('workshops/<int:pk>/edit/', workshop_views.workshop_edit_view, name='workshop_edit'),
-    path('workshops/<int:pk>/delete/', workshop_views.workshop_delete_view, name='workshop_delete'),
-
-    # URL های جدید برای ورود و خروج کاربران
+    path('dashboard/', views.dashboard_view, name='dashboard'),
+    
+    # URL های ورود و خروج
     path('login/', auth_views.LoginView.as_view(
         template_name='login.html',
-        # اگر کاربر قبلا لاگین کرده بود، او را به داشبورد هدایت کن
-        # این مقدار در settings.py با LOGIN_REDIRECT_URL = '/dashboard/' تنظیم می‌شود
-        redirect_authenticated_user=True  
+        redirect_authenticated_user=True
     ), name='login'),
-
     path('logout/', auth_views.LogoutView.as_view(next_page=reverse_lazy('login')), name='logout'),
 
     # ==============================================================================
@@ -64,7 +62,7 @@ urlpatterns = [
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
-# افزودن مسیر فایل‌های مدیا در حالت توسعه (DEBUG=True)
+# افزودن مسیر فایل‌های مدیا در حالت توسعه
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

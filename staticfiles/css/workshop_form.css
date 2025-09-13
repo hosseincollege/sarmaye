@@ -1,0 +1,206 @@
+/* static/css/workshop_form.css */
+body {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Vazirmatn', sans-serif;
+    background-color: #f0f4f8;
+    color: #34495e;
+    line-height: 1.6;
+}
+
+.form-container {
+    max-width: 900px;
+    margin: 50px auto;
+    padding: 40px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e1e8f0;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 35px;
+    border-bottom: 1px solid #e1e8f0;
+    padding-bottom: 20px;
+}
+
+.form-header h1 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.btn-back {
+    padding: 10px 20px;
+    background-color: #7f8c8d;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.btn-back:hover {
+    background-color: #6c7a7b;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px 30px;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #4a637a;
+    font-size: 0.95rem;
+}
+
+/* استایل‌دهی به تمام فیلدهای ورودی داخل فرم */
+.form-group input[type="text"],
+.form-group input[type="file"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d9e6;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    font-family: 'Vazirmatn', sans-serif;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: #f8fafc;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+    background-color: white;
+}
+
+textarea {
+    resize: vertical;
+}
+
+/* استایل خاص برای اینپوت‌های فایل پیش‌فرض */
+.form-group input[type="file"] {
+    padding: 8px; /* پدینگ کمتر برای فیلد فایل */
+    background-color: white;
+}
+
+/* === استایل‌های بخش سفارشی آپلود فایل === */
+input#id_images {
+    display: none;
+}
+
+.file-upload-area {
+    border: 2px dashed #a8b5c3;
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #fdfdff;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.file-upload-area:hover,
+.file-upload-area:focus {
+    outline: none;
+    border-color: #3498db;
+    background-color: #f1f8fe;
+}
+
+.file-upload-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-bottom: 10px;
+    color: #3498db;
+}
+
+.file-upload-text {
+    font-weight: 500;
+    color: #5a738e;
+}
+
+#file-upload-feedback {
+    margin-top: 15px;
+}
+
+#selected-files-count {
+    display: block;
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
+#selected-files-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 120px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+}
+
+#selected-files-list li {
+    background-color: #e9ecef;
+    padding: 6px 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    color: #343a40;
+    direction: ltr;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.error-message {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    margin-top: 6px;
+    font-weight: 500;
+}
+
+.form-buttons {
+    text-align: left;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #e1e8f0;
+}
+
+.btn-submit {
+    padding: 12px 30px;
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(41, 128, 185, 0.2);
+}
+
+.btn-submit:hover {
+    background-color: #2471a3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(41, 128, 185, 0.3);
+}
