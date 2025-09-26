@@ -1,0 +1,108 @@
+/* src/components/WorkshopList.css */
+
+.workshop-list-container {
+    width: 90%;
+    max-width: 1300px;
+    margin: 2rem auto;
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+.workshop-list-container h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #333;
+}
+
+.status-message {
+    text-align: center;
+    padding: 3rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    font-size: 1.2rem;
+    color: #555;
+    margin-top: 2rem;
+}
+
+.status-message.error {
+    background-color: #fff2f2;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.workshop-card {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.workshop-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background-color: #eee; /* یک رنگ پس‌زمینه برای زمانی که تصویر در حال بارگذاری است */
+}
+
+.card-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.card-title {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.3rem;
+    color: #2c3e50;
+}
+
+.card-description {
+    font-size: 0.95rem;
+    color: #7f8c8d;
+    line-height: 1.6;
+    flex-grow: 1;
+    margin-bottom: 1rem;
+}
+
+.card-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #34495e;
+    border-top: 1px solid #ecf0f1;
+    padding-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-button {
+    display: block;
+    text-align: center;
+    padding: 0.8rem;
+    background-color: #8A2BE2; /* رنگ بنفش */
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+    margin-top: auto; /* دکمه را به پایین کارت می‌چسباند */
+}
+
+.card-button:hover {
+    background-color: #7324b8;
+}
