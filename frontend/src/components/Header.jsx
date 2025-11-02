@@ -1,26 +1,31 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+
+// Contexts
+import { AuthContext } from "../AuthContext";
+import { ThemeContext } from "../ThemeContext"; // اطمینان حاصل کنید که این فایل وجود دارد
+
+// Assets & Icons
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import { AuthContext } from "../AuthContext";
-import { useNavigate } from "react-router-dom";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import logo from "../170.png";
 
 export default function Header() {
   const navigate = useNavigate();
   const { currentUser, setCurrentUser } = useContext(AuthContext);
+  const { theme, setTheme } = useContext(ThemeContext);
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [subMenuOpen, setSubMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const menuRef = useRef(null);
   const userMenuRef = useRef(null);
 
-
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false);
-        setSubMenuOpen(false);
       }
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
         setUserMenuOpen(false);
@@ -37,164 +42,64 @@ export default function Header() {
     setUserMenuOpen(false);
   };
 
-  const handleCategoryClick = (path) => {
+  const handleNavigation = (path) => {
     navigate(path);
-    // بستن منوها پس از کلیک
     setMenuOpen(false);
-    setSubMenuOpen(false);
   };
 
+  const cycleTheme = () => {
+    const modes = ["light", "dark", "system"];
+    const currentIndex = modes.indexOf(theme);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    setTheme(modes[nextIndex]);
+  };
 
   return (
-    <header
-      style={{
-        direction: "rtl",
-        backgroundColor: "#fff",
-        borderBottom: "1px solid #ddd",
-        padding: "10px 20px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        position: "sticky",
-        top: 0,
-        zIndex: 1000,
-        fontFamily: "'Vazirmatn', sans-serif",
-      }}
-    >
-      {/* منوی همبرگری */}
-      <div style={{ position: "relative" }} ref={menuRef}>
-        <span style={{ cursor: "pointer" }} onClick={() => setMenuOpen(!menuOpen)}>
+    <header style={styles.header}>
+      {/* Hamburger Menu (Right Side for RTL) */}
+      <div style={styles.menuContainer} ref={menuRef}>
+        <span style={styles.iconButton} onClick={() => setMenuOpen(!menuOpen)}>
           <MenuIcon />
         </span>
-
-        {/* منوی اصلی همبرگر */}
-        <div
-          style={{
-            display: menuOpen ? "block" : "none",
-            position: "absolute",
-            top: "30px",
-            right: 0,
-            background: "#fff",
-            border: "1px solid #ddd",
-            borderRadius: "5px",
-            minWidth: "150px",
-            boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
-          }}
-        >
-          {/* آیتم لیست کارگاه‌ها  */}
-          <div
-            style={{
-              padding: "5px 15px",
-              cursor: "pointer",
-              position: "relative",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}>
-
-            {/* لینک مستقیم */}
-            <span onClick={() => handleCategoryClick("/workshops")}>لیست کارگاه‌ها</span>
+        {menuOpen && (
+          <div style={styles.dropdownMenu}>
+            <div style={styles.menuItem} onClick={() => handleNavigation("/workshops")}>لیست کارگاه‌ها</div>
+            <div style={styles.menuItem} onClick={() => handleNavigation("/crypto")}>رمز ارز</div>
+            <div style={styles.menuItem} onClick={() => handleNavigation("/invest")}>سرمایه گذاری</div>
           </div>
-          {/* آیتم‌های دیگر */}
-          <div style={{ padding: "5px 15px", cursor: "pointer" }} onClick={() => navigate("/crypto")}>
-            رمز ارز
-          </div>
-          <div style={{ padding: "5px 15px", cursor: "pointer" }} onClick={() => navigate("/invest")}>
-            سرمایه گذاری
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* لوگو */}
-      <div
-        style={{
-          fontFamily: "'Vazir', sans-serif",
-          fontWeight: "700",
-          fontSize: "22px",
-          cursor: "pointer",
-          color: "#4A4A4A",          // رنگ پیش‌فرض
-          transition: "color 0.3s ease",
-        }}
-        onClick={() => navigate("/")}
-        onMouseEnter={(e) => (e.target.style.color = "#D4AF37")}  // طلایی روشن
-        onMouseLeave={(e) => (e.target.style.color = "#A9A9A9")}  // نقره‌ای
-      >
-        سیمین پلاس
+      {/* Image Logo (Center) */}
+      <div style={styles.logoContainer} onClick={() => navigate("/")}>
+        <img src={logo} alt="Simin Pluse Logo" style={styles.logoImage} />
       </div>
 
-
-
-
-      {/* منوی کاربر */}
-      <div style={{ position: "relative" }} ref={userMenuRef}>
-        <span style={{ cursor: "pointer" }} onClick={() => setUserMenuOpen(!userMenuOpen)}>
-          <AccountCircleIcon />
+      {/* Left-side Icons Container */}
+      <div style={styles.leftIconsContainer}>
+        {/* Theme Switcher Icon */}
+        <span style={styles.iconButton} onClick={cycleTheme} title={`Current theme: ${theme}`}>
+          <Brightness4Icon />
         </span>
 
-        <div
-          style={{
-            display: userMenuOpen ? "block" : "none",
-            position: "absolute",
-            top: "35px",
-            left: 0,
-            background: "#fff",
-            border: "1px solid #ddd",
-            borderRadius: "5px",
-            padding: "10px",
-            minWidth: "150px",
-            boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
-            textAlign: "right",
-            fontFamily: "'Vazirmatn', sans-serif",
-          }}
-        >
-          {currentUser ? (
-            <>
-              <p style={{ margin: "5px 0" }}>👋 سلام، {currentUser.username}</p>
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: "100%",
-                  padding: "5px",
-                  background: "#f44336",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "3px",
-                  cursor: "pointer",
-                }}
-              >
-                خروج
-              </button>
-            </>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
-              <button
-                onClick={() => navigate("/login")}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  background: "#fff",
-                  color: "#2b00ff",
-                  border: "none",
-                  borderRadius: "3px",
-                  cursor: "pointer",
-                }}
-              >
-                ورود
-              </button>
-              <button
-                onClick={() => navigate("/register")}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  background: "#fff",
-                  color: "#ff00ee",
-                  border: "none",
-                  borderRadius: "3px",
-                  cursor: "pointer",
-                }}
-              >
-                ثبت‌نام
-              </button>
+        {/* User Menu */}
+        <div style={styles.menuContainer} ref={userMenuRef}>
+          <span style={styles.iconButton} onClick={() => setUserMenuOpen(!userMenuOpen)}>
+            <AccountCircleIcon />
+          </span>
+          {userMenuOpen && (
+            <div style={styles.userDropdown}>
+              {currentUser ? (
+                <>
+                  <p style={styles.welcomeMessage}>👋 سلام، {currentUser.username}</p>
+                  <button onClick={handleLogout} style={styles.logoutButton}>خروج</button>
+                </>
+              ) : (
+                <div style={styles.authButtonsContainer}>
+                  <button onClick={() => navigate("/login")} style={styles.loginButton}>ورود</button>
+                  <button onClick={() => navigate("/register")} style={styles.registerButton}>ثبت‌نام</button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -202,3 +107,117 @@ export default function Header() {
     </header>
   );
 }
+
+// --- Styles Object ---
+const styles = {
+  header: {
+    direction: "rtl",
+    backgroundColor: "var(--header-bg, #fff)", // استفاده از متغیر CSS برای تم
+    color: "var(--text-color, #000)", // استفاده از متغیر CSS برای تم
+    borderBottom: "1px solid var(--border-color, #ddd)",
+    padding: "10px 20px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    position: "sticky",
+    top: 0,
+    zIndex: 1000,
+    fontFamily: "'Vazirmatn', sans-serif",
+    transition: 'background-color 0.3s, color 0.3s', // انیمیشن نرم برای تغییر تم
+  },
+  leftIconsContainer: { // استایل جدید برای کانتینر آیکون‌های چپ
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px', // فاصله بین آیکون‌ها
+  },
+  menuContainer: {
+    position: "relative",
+  },
+  iconButton: {
+    cursor: "pointer",
+    display: 'flex',
+    alignItems: 'center',
+  },
+  dropdownMenu: {
+    position: "absolute",
+    top: "40px",
+    right: 0,
+    background: "var(--dropdown-bg, #fff)",
+    color: "var(--text-color, #000)",
+    border: "1px solid var(--border-color, #ddd)",
+    borderRadius: "8px",
+    minWidth: "160px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    zIndex: 1001,
+  },
+  menuItem: {
+    padding: "10px 20px",
+    cursor: "pointer",
+    transition: 'background-color 0.2s',
+  },
+  logoContainer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    cursor: "pointer",
+    padding: '0 20px', // کمی فاصله از طرفین
+  },
+  logoImage: {
+    height: "45px",
+    objectFit: "contain",
+  },
+  userDropdown: {
+    position: "absolute",
+    top: "40px",
+    left: 0,
+    background: "var(--dropdown-bg, #fff)",
+    color: "var(--text-color, #000)",
+    border: "1px solid var(--border-color, #ddd)",
+    borderRadius: "8px",
+    padding: "12px",
+    minWidth: "180px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    textAlign: "right",
+    fontFamily: "'Vazirmatn', sans-serif",
+    zIndex: 1001,
+  },
+  welcomeMessage: {
+    margin: "0 0 10px 0",
+    whiteSpace: 'nowrap',
+    fontWeight: '500',
+  },
+  logoutButton: {
+    width: "100%",
+    padding: "8px",
+    background: "#f44336",
+    color: "#fff",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    fontSize: '14px',
+  },
+  authButtonsContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  loginButton: {
+    width: "100%",
+    padding: "8px",
+    background: "#007bff",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+  },
+  registerButton: {
+    width: "100%",
+    padding: "8px",
+    background: "#6c757d",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+  },
+};

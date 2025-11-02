@@ -1,11 +1,16 @@
+// src/theme.js
+
 import { createTheme } from "@mui/material/styles";
 
 const theme = createTheme({
   direction: "rtl",
   typography: {
-    fontFamily: "Vazir, Roboto, Arial",
-    fontFamily: 'Vazirmatn, Arial, sans-serif',
-    fontSize: 16, // پیش‌فرض برای body
+    // فقط یک fontFamily باید وجود داشته باشد
+    // استفاده از آرایه و join(',') روش استاندارد و پیشنهادی MUI است
+    fontFamily: ['Vazirmatn', 'Roboto', 'Arial', 'sans-serif'].join(','),
+    
+    // بقیه تنظیمات سایز و وزن فونت شما عالی و صحیح است
+    fontSize: 16,
     h1: { fontSize: '2.5rem', fontWeight: 'bold' },
     h2: { fontSize: '2.2rem', fontWeight: 'bold' },
     h3: { fontSize: '2rem', fontWeight: 'bold' },

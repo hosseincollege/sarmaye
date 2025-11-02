@@ -61,15 +61,27 @@ class ManagerInline(admin.StackedInline):
 
 # --- کلاس اصلی WorkshopAdmin با بهبودهای لازم ---
 
+from django.contrib import admin
+from .models import Workshop
+
 @admin.register(Workshop)
 class WorkshopAdmin(admin.ModelAdmin):
-    # لیست فیلدهایی که در صفحه لیست کارگاه‌ها نمایش داده می‌شوند
-    list_display = (
-        'title', 'owner', 'contact_number', 'location',
-        'required_capital', 'profit_percentage', 'created_at',
-    )
-    list_filter = ('created_at', 'owner', 'location')
-    search_fields = ('title', 'description', 'owner__username')
+    # لیست نمایش در جدول ادمین
+    list_display = [
+        'id', 
+        'title', 
+        'category',
+
+        'province', 
+        'required_capital', 
+        'start_date'
+    ]
+
+    # فیلترهای کناری
+    list_filter = ['category', 'province']
+
+    search_fields = ['title', 'description', 'province', 'product_type']
+    
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at')
 
@@ -104,12 +116,11 @@ class WorkshopAdmin(admin.ModelAdmin):
             }),
             ('اطلاعات تماس و قرارداد', {
                 'fields': (
-                    'agency', 'contact_number', 'product_type', 'required_capital',
-                    'profit_percentage', 'contract_duration', 'contract_details'
+                    'contact_number', 'product_type', 'required_capital',
                 )
             }),
             ('اطلاعات تکمیلی و مالی', {
-                'fields': ('location', 'start_date', 'last_year_sales', 'last_year_profit')
+                'fields': ('location', 'start_date')
             }),
         )
         

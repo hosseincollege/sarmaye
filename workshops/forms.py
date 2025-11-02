@@ -43,64 +43,103 @@ class WorkshopForm(forms.ModelForm):
 
     class Meta:
         model = Workshop
-        # === مهم: تمام فیلدهایی که کاربر باید پر کند را اینجا لیست می‌کنیم ===
+
+        # 👇 همه فیلدها
         fields = [
+            # --- 🔵 اطلاعات کلی ---
             'title',
-            'owner',
             'description',
-            'agency',
-            'contact_number',
-            'location',
             'product_type',
+
+            'category',
+            'province',
+
+            'ownership_type',
+            'contact_number',
+
+            'website',
+            'email',
+
+            'total_members',
+            'area',
+
             'required_capital',
-            'profit_percentage',
-            'contract_duration',
-            'contract_details',
-            'cover_image',
-            # فیلد 'images' در بالا به صورت جداگانه تعریف شده است
-            # --- فیلدهای باقی‌مانده از مدل که اضافه می‌کنیم ---
             'start_date',
-            'last_year_sales',
-            'last_year_profit',
+
+            
+
+            'location',
+            'sales_representative',
+
+
+            'cover_image',
+            'images',
         ]
 
-        # برای هر فیلد، یک لیبل فارسی خوانا تعریف می‌کنیم
+        # 📋 برچسب‌های فارسی‌تر با تفکیک موضوعی
         labels = {
+            # 🔵 اطلاعات کلی
             'title': 'عنوان کارگاه',
-            'owner': 'مالک/نماینده',
-            'description': 'توضیحات کامل کارگاه',
-            'agency': 'نمایندگی/شرکت',
+            'description': 'توضیحات کارگاه',
+            'product_type': 'نوع محصول',
+
+            'category': 'دسته‌بندی',
+            'province': 'استان',
+
+            'ownership_type': 'نوع مالکیت',
             'contact_number': 'شماره تماس',
-            'location': 'موقعیت مکانی',
-            'product_type': 'نوع محصول/خدمات',
-            'required_capital': 'سرمایه مورد نیاز (به تومان)',
-            'profit_percentage': 'درصد سود برای سرمایه‌گذار',
-            'contract_duration': 'مدت قرارداد (به ماه)',
-            'contract_details': 'جزئیات تکمیلی قرارداد',
-            'cover_image': 'تصویر اصلی (کاور)',
-            # --- لیبل برای فیلدهای جدید اضافه شده ---
+
+            'website': 'آدرس وب‌سایت',
+            'email': 'ایمیل کاری',
+
+            'total_members': 'تعداد اعضا',
+            'area': 'مساحت کارگاه (متر مربع)',
+
+            'required_capital': 'سرمایه مورد نیاز (تومان)',
             'start_date': 'تاریخ شروع فعالیت',
-            'last_year_sales': 'فروش سال گذشته (تومان)',
-            'last_year_profit': 'سود سال گذشته (تومان)',
+            
+
+            'location': 'موقعیت مکانی',
+            'sales_representative': 'نمایندگی فروش اختصاصی',
+
+
+            'cover_image': 'تصویر اصلی (کاور)',
+            'images': 'تصاویر گالری',
         }
-        
-        # استایل‌های ویجت‌ها برای ظاهر بهتر در فرم
+
+        # 🎨 ویجت‌ها با کلاس‌های Bootstrap
         widgets = {
+            # اطلاعات کلی
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'owner': forms.Select(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
-            'agency': forms.TextInput(attrs={'class': 'form-control'}),
-            'contact_number': forms.TextInput(attrs={'dir': 'ltr', 'class': 'form-control'}),
-            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
             'product_type': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            'category': forms.Select(attrs={'class': 'form-control'}),
+            'province': forms.TextInput(attrs={'class': 'form-control'}),
+
+            'ownership_type': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_number': forms.TextInput(attrs={'dir': 'ltr', 'class': 'form-control'}),
+
+            'website': forms.URLInput(attrs={'dir': 'ltr', 'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'dir': 'ltr', 'class': 'form-control'}),
+
+            'total_members': forms.NumberInput(attrs={'class': 'form-control'}),
+            'area': forms.NumberInput(attrs={'class': 'form-control'}),
+
             'required_capital': forms.NumberInput(attrs={'class': 'form-control'}),
-            'profit_percentage': forms.NumberInput(attrs={'step': '0.01', 'class': 'form-control'}),
-            'contract_duration': forms.NumberInput(attrs={'class': 'form-control'}),
-            'contract_details': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'cover_image': forms.FileInput(attrs={'class': 'form-control'}),
-            # ویجت برای فیلد images به صورت خودکار از MultipleFileField اعمال می‌شود
-            # --- ویجت برای فیلدهای جدید اضافه شده ---
             'start_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'last_year_sales': forms.NumberInput(attrs={'class': 'form-control'}),
-            'last_year_profit': forms.NumberInput(attrs={'class': 'form-control'}),
+            
+            'cover_image': forms.FileInput(attrs={'class': 'form-control'}),
+            
+        }
+
+    # برای نمایش مرتب در Template می‌تونی مثلاً sections تعریف کنی:
+    def grouped_fields(self):
+        """برمی‌گردونه فیلدها بر اساس دسته‌بندی برای رندر مرتب"""
+        return {
+            'اطلاعات کلی': ['title', 'description', 'category', 'province', 'ownership_type', 'total_members', 'start_date', 'product_type'],
+            'اطلاعات مالی': ['required_capital'],
+            'اطلاعات فنی': ['area', 'cover_image'],
+            'اطلاعات تماس': ['contact_number', 'website', 'email'],
+            'گالری تصاویر': ['images'],
         }

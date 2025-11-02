@@ -3,38 +3,49 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Workshop(models.Model):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workshops', verbose_name="مالک")
-    title = models.CharField(max_length=200, verbose_name="عنوان کارگاه")
-    description = models.TextField(verbose_name="توضیحات")
-    cover_image = models.ImageField(upload_to='workshop_covers/', blank=True, null=True, verbose_name="تصویر کاور")
-    location = models.CharField(max_length=255, blank=True, null=True, verbose_name="موقعیت مکانی")
-    start_date = models.DateField(blank=True, null=True, verbose_name="تاریخ شروع فعالیت")
-
-    agency = models.CharField(max_length=200, blank=True, null=True, verbose_name="شرکت")
-    contact_number = models.CharField(max_length=20, blank=True, null=True, verbose_name="شماره تماس")
-    website = models.CharField(max_length=200, blank=True, null=True, verbose_name="وبسایت")
-    email = models.CharField(max_length=254, blank=True, null=True, verbose_name="ایمیل")
-    product_type = models.CharField(max_length=150, blank=True, null=True, verbose_name="نوع محصول/خدمات")
-
-    category = models.CharField(max_length=100, blank=True, null=True, verbose_name="دسته‌بندی")
-
-
-    sales_representative = models.CharField(max_length=200, blank=True, null=True, verbose_name="نمایندگی")
-    address = models.TextField(blank=True, null=True, verbose_name="آدرس")
-
-    # === فیلدهای جدید اطلاعات مالی و قرارداد ===
-    required_capital = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="سرمایه مورد نیاز (تومان)")
-    profit_percentage = models.FloatField(blank=True, null=True, verbose_name="درصد سود برای سرمایه‌گذار")
-    funded_percentage = models.FloatField(blank=True, null=True, verbose_name="درصد پوشش سرمایه")
-    contract_duration = models.IntegerField(blank=True, null=True, verbose_name="مدت قرارداد (ماه)")
-    contract_details = models.TextField(blank=True, null=True, verbose_name="جزئیات تکمیلی قرارداد")
+    # 👤 مالک
+    owner = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='workshops', 
+        verbose_name="مالک"
+    )
 
     
-    last_year_sales = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="فروش سال گذشته")
-    last_year_profit = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="سود سال گذشته")
+    title = models.CharField(max_length=200, verbose_name="عنوان کارگاه")
+    description = models.TextField(verbose_name="توضیحات")
+    product_type = models.CharField(max_length=150, blank=True, null=True, verbose_name="نوع محصول")
+    
 
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="زمان ایجاد")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="زمان بروزرسانی")
+    # 🏭 اطلاعات کلی
+
+    category = models.CharField(max_length=100, blank=True, null=True, verbose_name="دسته‌بندی")
+    province = models.CharField(max_length=100, blank=True, null=True, verbose_name="استان")
+    
+    ownership_type = models.CharField(max_length=150, blank=True, null=True, verbose_name="نوع مالکیت")
+    contact_number = models.CharField(max_length=20, blank=True, null=True, verbose_name="شماره تماس")
+
+    website = models.CharField(max_length=200, blank=True, null=True, verbose_name="وب‌سایت")
+    email = models.EmailField(max_length=254, blank=True, null=True, verbose_name="ایمیل")
+
+    total_members = models.PositiveIntegerField(blank=True, null=True, verbose_name="تعداد نیروهای انسانی")
+    area = models.DecimalField(max_digits=12, decimal_places=0, blank=True, null=True, verbose_name="مساحت کارگاه (متر مربع)")
+    
+    required_capital = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="سرمایه مورد نیاز (تومان)")
+    start_date = models.DateField(blank=True, null=True, verbose_name="تاریخ تأسیس / شروع فعالیت")
+    
+
+        # 📍 موقعیت مکانی و نمایندگی
+    location = models.CharField(max_length=255, blank=True, null=True, verbose_name="موقعیت مکانی")
+    sales_representative = models.CharField(max_length=255, blank=True, null=True, verbose_name="نمایندگی فروش اختصاصی")
+
+
+    # 🖼️ فایل‌ها و تصویر
+    cover_image = models.ImageField(upload_to='workshop_covers/', blank=True, null=True, verbose_name="تصویر کاور")
+
+    # 🕓 زمان‌ها
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
 
     def __str__(self):
         return self.title
@@ -92,8 +103,7 @@ class InvestmentStage(models.Model):
     workshop = models.ForeignKey(Workshop, related_name='investments', on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=15, decimal_places=0, verbose_name="مبلغ (تومان)")
     purpose = models.CharField(max_length=200, verbose_name="هدف سرمایه‌گذاری")
-    profit_percentage = models.FloatField(verbose_name="درصد سود وعده داده شده")
-    return_duration_months = models.IntegerField(verbose_name="مدت بازگشت سرمایه (ماه)")
+
 
 
 # ======== گزارش ماهانه ========
@@ -102,8 +112,12 @@ class MonthlyReport(models.Model):
     month = models.IntegerField(verbose_name="ماه")
     year = models.IntegerField(verbose_name="سال")
     sales = models.DecimalField(max_digits=15, decimal_places=0, verbose_name="فروش")
-    gross_profit = models.DecimalField(max_digits=15, decimal_places=0, verbose_name="سود ناخالص")
-    net_profit = models.DecimalField(max_digits=15, decimal_places=0, verbose_name="سود خالص")
-    profit_percentage = models.FloatField(verbose_name="درصد سود")
     production_amount = models.CharField(max_length=50, verbose_name="میزان تولید")
-    sold_amount = models.CharField(max_length=50, verbose_name="میزان فروش")
+    equipment_rent = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="اجاره تجهیزات")
+    material_costs = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="هزینه مواد اولیه")
+    salary_maintenance = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="حقوق و نگهداری")
+    total_monthly_value = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="ارزش کل کارگاه")
+    profit = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="سود ماهانه")
+    profit_percentage = models.FloatField(blank=True, null=True, verbose_name="درصد سود ماهانه")
+    fixed_workshop_rent = models.DecimalField(max_digits=15, decimal_places=0, blank=True, null=True, verbose_name="اجاره ثابت زمین/سالن کارگاه")
+

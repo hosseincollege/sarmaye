@@ -6,7 +6,7 @@ export default function CreateWorkshopPage() {
   const navigate = useNavigate();
 
   return (
-    <Box sx={{ maxWidth: 800, mx: "auto", p: 2, direction: "rtl" }}>
+    <Box sx={{ width: "100%", mx: "auto", p: 2, direction: "rtl" }}>
       <Button
         variant="outlined"
         color="primary"

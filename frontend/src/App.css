@@ -1,5 +1,6 @@
 .App {
-  text-align: center;
+  text-align: right;
+  direction: rtl;
 }
 
 .App-logo {
@@ -22,6 +23,7 @@
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
+  direction: rtl;
 }
 
 .App-link {
@@ -45,4 +47,27 @@ input[type=number]::-webkit-outer-spin-button {
 }
 input[type=number] {
   -moz-appearance: textfield; /* برای Firefox */
+}
+
+/* تنظیمات RTL برای کل صفحه */
+html, body, #root {
+  direction: rtl;
+  text-align: right;
+}
+
+/* RTL برای تمام div ها */
+div {
+  direction: rtl;
+  text-align: right;
+}
+
+/* RTL برای فرم‌ها */
+form {
+  direction: rtl;
+  text-align: right;
+}
+
+label {
+  direction: rtl;
+  text-align: right;
 }

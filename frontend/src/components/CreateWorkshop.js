@@ -4,22 +4,21 @@ import axios from "axios";
 import {
   TextField, Button, Paper, Typography, Box, Grid, Divider, IconButton,
   Accordion, AccordionSummary, AccordionDetails, Chip, InputAdornment,
-  Select, MenuItem, InputLabel, FormControl
+  Select, MenuItem, InputLabel, FormControl, Container, List, ListItem
 } from "@mui/material";
+
 import {
   AddCircle, RemoveCircle, ExpandMore, Category, Groups, Person,
   MonetizationOn, Assessment, Event, Inventory, Business, Image
 } from "@mui/icons-material";
 
 
+
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import DateObject from "react-date-object";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { CacheProvider } from "@emotion/react";
-import createCache from "@emotion/cache";
-import rtlPlugin from "stylis-plugin-rtl";
+
 
 function formatNumber(value) {
   if (!value) return "";
@@ -31,54 +30,51 @@ const adornmentStyle = { fontSize: "0.8rem", color: "#555" };
 const rtlInput = { "& input": { direction: "rtl", textAlign: "right" } };
 
 
-// ساخت تم راست‌چین
-const theme = createTheme({
-  direction: "rtl",
-});
-
-// ساخت کش RTL برای Emotion
-const cacheRtl = createCache({
-  key: "muirtl",
-  stylisPlugins: [rtlPlugin],
-});
-
-function App() {
-  return (
-    <CacheProvider value={cacheRtl}>
-      <ThemeProvider theme={theme}>
-        <div dir="rtl">
-          <CreateWorkshop />
-        </div>
-      </ThemeProvider>
-    </CacheProvider>
-  );
-}
-
 
 export default function CreateWorkshop({ onCreated }) {
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    category: "",
-    location: "",
-    last_year_sales: "",
-    last_year_profit: "",
 
-    // فیلدهای جدید اضافه شده
-    contact_number: "",
-    sales_representative: "",
-    start_date: "",
-    funded_percentage: "",
-    address: "",
-    agency: "",
-    product_type: "",
-    required_capital: "",
-    profit_percentage: "",
-    contract_duration: "",
-    contract_details: "",
-    website: "",
-    email: ""
+  // فهرست فیلدهایی که نیاز به قالب‌بندی عددی دارن
+  const numericFields = [
+    "monthly_rent",
+    "equipment_rent",
+    "material_costs",
+    "salary_maintenance",
+    "total_monthly_value",
+    "area",
+    "required_capital",
+    "total_members",
+  ];
+
+  // هزینه‌های ماهانه پایه
+  const [monthlyCosts, setMonthlyCosts] = useState({
+    rent: "",            // اجاره زمین/سالن
   });
+
+
+  // 📋 وضعیت فرم ایجاد کارگاه جدید (نسخه اصلاح‌شده)
+  const [form, setForm] = useState({
+    // === اطلاعات کلی ===
+    title: "",                 // عنوان کارگاه
+    description: "",           // توضیحات کارگاه
+    product_type: "",          // نوع محصول
+
+    // === اطلاعات تکمیلی ===
+    category: "",              // دسته‌بندی (صنعتی، کشاورزی، پزشکی و ...)
+    province: "",              // استان
+    contact_number: "",        // شماره تماس
+    website: "",               // وبسایت
+    email: "",                 // ایمیل
+    total_members: "",         // تعداد نیروها
+    area: "",                  // مساحت سالن یا کارگاه
+    required_capital: "",      // سرمایه مورد نیاز
+    ownership_type: "",        // نوع مالکیت
+
+    // === سایر اطلاعات زیرمجموعه ===
+    location: "",              // موقعیت مکانی
+    sales_representative: "",  // نمایندگی فروش اختصاصی
+  });
+
+
   
   // ✅✅✅ این خط را اضافه کنید ✅✅✅
   const [selectedDate, setSelectedDate] = useState(null);
@@ -91,7 +87,7 @@ export default function CreateWorkshop({ onCreated }) {
   const [manager, setManager] = useState({ name: "", description: "" });
 
   const [investments, setInvestments] = useState([
-    { amount: "", purpose: "", profit_percentage: "", return_duration_months: "" }
+    { amount: "", purpose: "" }
   ]);
 
   const monthNames = [
@@ -111,9 +107,17 @@ export default function CreateWorkshop({ onCreated }) {
 
   const createEmptyYearData = () =>
     Array.from({ length: 12 }, () => ({
-      sales: "", gross_profit: "", net_profit: "",
-      profit_percentage: "", production_amount: "", sold_amount: ""
+      sales: "",
+      production_amount: "",
+      equipment_rent: "",          // مبلغ فرضی اجاره تجهیزات و ماشین‌آلات
+      material_costs: "",          // هزینه خرید مواد اولیه
+      salary_maintenance: "",      // حقوق نیروها / نگهداری / تعمیرات
+      total_monthly_value: "",
+      profit: "",
+      profit_percentage: 0,
     }));
+
+
 
   const [copyMode, setCopyMode] = useState(false);
   const [monthlyReportsGroups, setMonthlyReportsGroups] = useState([
@@ -127,10 +131,17 @@ export default function CreateWorkshop({ onCreated }) {
   }
 
   function handleCellChange(groupIndex, monthIndex, field, value) {
-    const copy = [...monthlyReportsGroups];
-    copy[groupIndex].data[monthIndex][field] = value;
-    setMonthlyReportsGroups(copy);
+    const updated = [...monthlyReportsGroups];
+    updated[groupIndex].data[monthIndex][field] = value;
+    
+    // ✅ این خط کلیدی اضافه شد
+    // بعد از تغییر مقدار سلول، محاسبات را برای همان ردیف دوباره انجام بده
+    recalculateTotals(groupIndex, monthIndex); 
+
+    // توجه: تابع recalculateTotals خودش در انتها setMonthlyReportsGroups را صدا می‌زند
+    // پس نیازی به فراخوانی مجدد آن در اینجا نیست.
   }
+
 
   function handleAddNewYearTable() {
     setMonthlyReportsGroups([
@@ -139,8 +150,10 @@ export default function CreateWorkshop({ onCreated }) {
     ]);
   }
 
-  function handleRemoveYearTable(groupIndex) {
-    setMonthlyReportsGroups(monthlyReportsGroups.filter((_, i) => i !== groupIndex));
+
+  function handleRemoveYearTable(index) {
+    const updated = monthlyReportsGroups.filter((_, i) => i !== index);
+    setMonthlyReportsGroups(updated);
   }
 
   function handlePaste(groupIndex, startRow, e) {
@@ -152,33 +165,112 @@ export default function CreateWorkshop({ onCreated }) {
     rows.forEach((rowData, rowOffset) => {
       const rowIndex = startRow + rowOffset;
       if (rowIndex < 12) {
-        rowData.forEach((cell, colIndex) => {
-          const fields = ["sales", "gross_profit", "net_profit", "profit_percentage", "production_amount", "sold_amount"];
-          if (colIndex < fields.length) {
-            updated[groupIndex].data[rowIndex][fields[colIndex]] = cell.trim();
-          }
-        });
+        // ستون‌ها: [فروش, تولید, اجاره ثابت, اجاره تجهیزات, مواد اولیه, حقوق]
+        const salesVal = rowData[0]?.trim() ?? "";
+        const prodVal = rowData[1]?.trim() ?? "";
+        const fixedRentVal = rowData[2]?.trim() ?? "";
+        const equipRentVal = rowData[3]?.trim() ?? "";
+        const matVal = rowData[4]?.trim() ?? "";
+        const salaryVal = rowData[5]?.trim() ?? "";
+
+        updated[groupIndex].data[rowIndex].sales = salesVal;
+        updated[groupIndex].data[rowIndex].production_amount = prodVal;
+        updated[groupIndex].data[rowIndex].equipment_rent = equipRentVal;
+        updated[groupIndex].data[rowIndex].material_costs = matVal;
+        updated[groupIndex].data[rowIndex].salary_maintenance = salaryVal;
+
+        // اجاره ثابت رو جدا ذخیره کن (هر بار میخونه ولی برای کل سال یکیه)
+        if (fixedRentVal) {
+          updated[groupIndex].fixed_workshop_rent = Number(fixedRentVal) || 0;
+        }
+
+        recalculateTotals(groupIndex, rowIndex);
       }
     });
 
     setMonthlyReportsGroups(updated);
   }
 
+
+  // ✅ تابع تغییر اجاره ثابت کارگاه
+  function handleFixedRentChange(gIdx, value) {
+    const updated = [...monthlyReportsGroups];
+    updated[gIdx].fixed_workshop_rent = Number(value) || 0;
+    setMonthlyReportsGroups(updated);
+
+    // بعد از تغییر اجاره ثابت همه ماه‌ها رو دوباره حساب کن
+    updated[gIdx].data.forEach((_, i) => recalculateTotals(gIdx, i));
+  }
+
+  // ✅ تابع محاسبه ارزش کل و سود
+  function recalculateTotals(gIdx, i) {
+    const updated = [...monthlyReportsGroups];
+    const group = updated[gIdx];
+    const row = group.data[i];
+
+    const rentFixed = Number(group.fixed_workshop_rent || 0);
+    const rentEquip = Number(row.equipment_rent || 0);
+    const mat = Number(row.material_costs || 0);
+    const salary = Number(row.salary_maintenance || 0);
+    const sales = Number(row.sales || 0);
+
+    // 💰 ارزش کل کارگاه = اجاره ثابت + اجاره تجهیزات + مواد اولیه + حقوق و نگهداری
+    const total = rentFixed + rentEquip + mat + salary;
+    row.total_monthly_value = total;
+
+    // 💵 سود = فروش - ارزش کل کارگاه
+    const profit = sales - total; 
+    row.profit = profit;
+
+    // 📊 محاسبه درصد سود (سود تقسیم بر فروش)
+    // برای جلوگیری از تقسیم بر صفر، ابتدا فروش را بررسی می‌کنیم
+    const percentage = sales > 0 ? profit / sales : 0;
+    row.profit_percentage = percentage;
+
+    setMonthlyReportsGroups(updated);
+  }
+
+
   function exportToCSV() {
     const rows = [];
+
     monthlyReportsGroups.forEach((group) => {
       group.data.forEach((row, i) => {
+        const rentFixed = Number(group.fixed_workshop_rent || 0);
+        const equip = Number(row.equipment_rent || 0);
+        const mat = Number(row.material_costs || 0);
+        const salary = Number(row.salary_maintenance || 0);
+        const sales = Number(row.sales || 0);
+
+        // فقط فیلدهای ورودی، بدون سود و ارزش کل
         rows.push([
-          group.year, monthNames[i],
-          row.sales || 0, row.gross_profit || 0, row.net_profit || 0,
-          row.profit_percentage || 0, row.production_amount || 0, row.sold_amount || 0
+          group.year,
+          monthNames[i],
+          sales,
+          row.production_amount || 0,
+          rentFixed,
+          equip,
+          mat,
+          salary,
         ]);
       });
     });
+
+    const csvHeader = [
+      "سال",
+      "ماه",
+      "فروش",
+      "تعداد تولید",
+      "اجاره ثابت",
+      "اجاره تجهیزات",
+      "مواد اولیه",
+      "حقوق و نگهداری",
+    ];
+
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      ["سال,ماه,فروش,سود ناخالص,سود خالص,درصد سود,تولید,فروش رفته",
-      ...rows.map((e) => e.join(","))].join("\n");
+      [csvHeader.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
     const link = document.createElement("a");
     link.setAttribute("href", csvContent);
     link.setAttribute("download", "monthly_reports.csv");
@@ -186,63 +278,140 @@ export default function CreateWorkshop({ onCreated }) {
     link.click();
   }
 
-  function importFromCSV(e) {
-    const file = e.target.files[0];
+
+
+  // ✅ بارگذاری داده‌ها از CSV و پر کردن جدول
+  function importFromCSV(event) {
+    const file = event.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const lines = event.target.result.split("\n").slice(1);
-      const groups = {};
+    reader.onload = (e) => {
+      const text = e.target.result.trim().replace(/\r/g, "");
+      const lines = text.split("\n").slice(1);
+      if (!lines.length) {
+        alert("⚠️ فایل CSV خالی است");
+        return;
+      }
+
+      const groups = [];
+
       lines.forEach((line) => {
-        if (!line.trim()) return;
-        const [year, monthName, sales, gross_profit, net_profit,
-          profit_percentage, production_amount, sold_amount] = line.split(",");
-        const yearNum = parseInt(year);
-        if (!groups[yearNum]) groups[yearNum] = createEmptyYearData();
-        const monthIndex = monthNames.indexOf(monthName);
-        if (monthIndex >= 0) {
-          groups[yearNum][monthIndex] = {
-            sales: sales || 0,
-            gross_profit: gross_profit || 0,
-            net_profit: net_profit || 0,
-            profit_percentage: profit_percentage || 0,
-            production_amount: production_amount || 0,
-            sold_amount: sold_amount || 0
-          };
+        const [
+          yearStr,
+          monthName,
+          salesStr,
+          productionStr,
+          rentFixedStr,
+          equipmentStr,
+          materialStr,
+          salaryStr,
+        ] = line.split(",").map((x) => x?.trim());
+
+        const year = Number(yearStr);
+        if (!year || !monthName) return;
+
+        // ایجاد یا پیدا کردن گروه سال
+        let gIndex = groups.findIndex((g) => g.year === year);
+        if (gIndex === -1) {
+          groups.push({
+            year: year,
+            fixed_workshop_rent: Number(rentFixedStr) || 0,
+            data: createEmptyYearData(),
+          });
+          gIndex = groups.length - 1;
+        }
+
+        const monthIdx = monthNames.indexOf(monthName);
+        if (monthIdx >= 0 && groups[gIndex].data[monthIdx]) {
+          groups[gIndex].data[monthIdx].sales = Number(salesStr) || 0;
+          groups[gIndex].data[monthIdx].production_amount = Number(productionStr) || 0;
+          groups[gIndex].data[monthIdx].equipment_rent = Number(equipmentStr) || 0;
+          groups[gIndex].data[monthIdx].material_costs = Number(materialStr) || 0;
+          groups[gIndex].data[monthIdx].salary_maintenance = Number(salaryStr) || 0;
         }
       });
-      setMonthlyReportsGroups(
-        Object.keys(groups).map((yr) => ({
-          year: parseInt(yr), data: groups[yr]
-        }))
-      );
+
+      // --- شروع تغییرات ---
+      // 💡 راه‌حل: محاسبات را مستقیماً روی آرایه groups قبل از set state انجام می‌دهیم
+      groups.forEach((group) => {
+        group.data.forEach((row) => {
+          const rentFixed = Number(group.fixed_workshop_rent || 0);
+          const rentEquip = Number(row.equipment_rent || 0);
+          const mat = Number(row.material_costs || 0);
+          const salary = Number(row.salary_maintenance || 0);
+          const sales = Number(row.sales || 0);
+          
+          // 💰 ارزش کل کارگاه
+          const total = rentFixed + rentEquip + mat + salary;
+          row.total_monthly_value = total;
+
+          // 💵 سود
+          const profit = sales - total; // <-- سود را در متغیر محلی بریزید
+          row.profit = profit;
+
+          // 📊 درصد سود (این بخش اضافه شد)
+          const percentage = sales > 0 ? profit / sales : 0;
+          row.profit_percentage = percentage;
+        });
+      });
+      
+      // ست نهایی در state اصلی با داده‌های کامل و محاسبه‌شده
+      setMonthlyReportsGroups(groups);
+      // --- پایان تغییرات ---
+
+      alert("✅ فایل CSV با موفقیت بارگذاری شد.");
     };
-    reader.readAsText(file);
+
+    reader.readAsText(file, "UTF-8");
   }
 
 
-  const currentYear = new Date().getFullYear(); // سال جاری
-
-  const [monthlyReports, setMonthlyReports] = useState(
-    Array.from({ length: 12 }, (_, i) => ({
-      month: i + 1,
-      year: currentYear,
-      sales: 0,
-      gross_profit: 0,
-      net_profit: 0,
-      profit_percentage: 0,
-      production_amount: 0,
-      sold_amount: 0,
-    }))
-  );
 
 
   const [coverImage, setCoverImage] = useState(null);
   const [gallery, setGallery] = useState([]);
 
+
+
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    
+
+    let newValue = value;
+
+    if (numericFields.includes(name)) {
+      const raw = value.replace(/[^\d]/g, ""); // حذف هر چیزی جز رقم
+      const formatted = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      newValue = formatted;
+    }
+
+    setForm((prev) => {
+      const updated = { ...prev, [name]: newValue };
+
+      // جمع کل فقط وقتی لازم انجام بشه
+      if (
+        ["monthly_rent", "equipment_rent", "material_costs", "salary_maintenance"].includes(name)
+      ) {
+        const total =
+          (Number(updated.monthly_rent?.replace(/,/g, "") || 0)) +
+          (Number(updated.equipment_rent?.replace(/,/g, "") || 0)) +
+          (Number(updated.material_costs?.replace(/,/g, "") || 0)) +
+          (Number(updated.salary_maintenance?.replace(/,/g, "") || 0));
+
+        updated.total_monthly_value = total
+          ? total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+          : "";
+      }
+
+      return updated;
+    });
   };
+
+
+
+
 
   const handleDynamicChange = (state, setState, idx, key, value) => {
     const copy = [...state];
@@ -254,6 +423,28 @@ export default function CreateWorkshop({ onCreated }) {
   const removeItem = (state, setState, idx) =>
     setState(state.filter((_, i) => i !== idx));
 
+
+  // 💡 تابع محاسبه تعداد کل نیروها (جمع تیم + مدیرعامل)
+  function calcTeamTotal() {
+    // مجموع اعضای هر دسته تیم (عدد داخل state: teamCategories)
+    const teamCount = teamCategories.reduce((sum, c) => {
+      const count = parseInt(c.count) || 0;
+      return sum + count;
+    }, 0);
+
+    // یک نفر هم برای مدیرعامل حساب می‌شود
+    return teamCount + (manager.name ? 1 : 0);
+  }
+
+  // 💰 تابع محاسبه کل سرمایه مورد نیاز (جمع مبالغ بخش‌های سرمایه‌گذاری)
+  function calcTotalInvestment() {
+    const total = investments.reduce((sum, inv) => {
+      const amount = parseInt(inv.amount.toString().replace(/[^\d]/g, "")) || 0;
+      return sum + amount;
+    }, 0);
+    // قالب‌بندی سه‌رقمی با "تومان"
+    return total > 0 ? `${total.toLocaleString("fa-IR")} تومان` : "";
+  }
 
   // --- توابع کمکی برای مدیریت لیست‌های داینامیک ---
 
@@ -277,108 +468,115 @@ export default function CreateWorkshop({ onCreated }) {
   const addInvestment = () => addItem(
     investments, 
     setInvestments, 
-    { amount: "", purpose: "", profit_percentage: "", return_duration_months: "" }
+    { amount: "", purpose: "" }
   );
   const removeInvestment = (idx) => removeItem(investments, setInvestments, idx);
 
-  // ۴. توابع مربوط به گزارشات ماهانه (Monthly Reports)
-  const addMonthlyReport = () => addItem(
-    monthlyReports, 
-    setMonthlyReports, 
-    { month: "", year: "", sales: "", gross_profit: "", net_profit: "", profit_percentage: "", production_amount: "", sold_amount: "" }
-  );
-  const removeMonthlyReport = (idx) => removeItem(monthlyReports, setMonthlyReports, idx);
 
-
-  // افزودن ۱۲ ماه یک سال جدید
+  // ✅ افزودن یک سال جدید با ۱۲ ماه خالی
   const addYearReports = () => {
-    if (monthlyReports.length === 0) {
-      const currentYear = new Date().getFullYear();
-      const newYearData = Array.from({ length: 12 }, (_, i) => ({
-        month: i + 1,
-        year: currentYear,
-        sales: "",
-        gross_profit: "",
-        net_profit: "",
-        profit_percentage: "",
-        production_amount: "",
-        sold_amount: ""
-      }));
-      setMonthlyReports(newYearData);
-    } else {
-      const years = monthlyReports.map(r => Number(r.year) || new Date().getFullYear());
-      const maxYear = Math.max(...years);
-      const newYearData = Array.from({ length: 12 }, (_, i) => ({
-        month: i + 1,
-        year: maxYear + 1,
-        sales: "",
-        gross_profit: "",
-        net_profit: "",
-        profit_percentage: "",
-        production_amount: "",
-        sold_amount: ""
-      }));
-      setMonthlyReports([...monthlyReports, ...newYearData]);
-    }
+    const currentYear =
+      monthlyReportsGroups.length > 0
+        ? monthlyReportsGroups[monthlyReportsGroups.length - 1].year + 1
+        : new Date().getFullYear();
+
+    const newYearData = {
+      year: currentYear,
+      fixed_workshop_rent: 0, // یا هر مقدار پیش‌فرض
+      data: createEmptyYearData(),
+    };
+
+    setMonthlyReportsGroups([...monthlyReportsGroups, newYearData]);
   };
 
-  // تابع handleSubmit و سایر توابع شما اینجا قرار می‌گیرند...
+  // ✅ حذف یک سال خاص
+  const removeYearReports = (index) => {
+    const updatedGroups = monthlyReportsGroups.filter((_, i) => i !== index);
+    setMonthlyReportsGroups(updatedGroups);
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+
+
+    const cleanedForm = { ...form };
+    numericFields.forEach((field) => {
+      if (cleanedForm[field]) {
+        cleanedForm[field] = cleanedForm[field].toString().replace(/[^\d]/g, "");
+      }
+    });
+
+    // ✅ 2. ساخت FormData با فرم پاک‌شده
     const fd = new FormData();
 
-    // ✅✅✅ این بلوک کد ویرایش شده است ✅✅✅
-    // Workshop base
-    Object.entries(form).forEach(([k, v]) => {
-      // ⚠️ این شرط باعث می‌شود فیلد start_date از آبجکت form ارسال نشود
-      if (v !== "" && k !== "start_date") { 
+    // --- پایه کارگاه ---
+    Object.entries(cleanedForm).forEach(([k, v]) => {
+      if (v !== "" && k !== "start_date") {
         fd.append(k, v);
       }
     });
 
-    // ✅✅✅ این قسمت جدید اضافه شده است ✅✅✅
-    // تاریخ را به صورت دستی و با فرمت صحیح اضافه می‌کنیم
+    // --- تاریخ به فرمت میلادی ---
     if (selectedDate) {
       const formattedDate = selectedDate.convert("gregorian").format("YYYY-MM-DD");
       fd.append("start_date", formattedDate);
     }
 
-    // JSON data
+    // --- بخش‌های مختلف ---
+    fd.append("monthly_costs", JSON.stringify(monthlyCosts));
     fd.append("products_data", JSON.stringify(products));
     fd.append("team_categories_data", JSON.stringify(teamCategories));
     fd.append("manager_data", JSON.stringify(manager));
     fd.append("investments_data", JSON.stringify(investments));
-    fd.append("monthly_reports_data", JSON.stringify(
-      monthlyReportsGroups.flatMap(g =>
-        g.data.map((row, i) => ({
-          year: g.year,
-          month: i + 1,
-          sales: row.sales === "" ? 0 : row.sales,
-          gross_profit: row.gross_profit === "" ? 0 : row.gross_profit,
-          net_profit: row.net_profit === "" ? 0 : row.net_profit,
-          profit_percentage: row.profit_percentage === "" ? 0 : row.profit_percentage,
-          production_amount: row.production_amount === "" ? 0 : row.production_amount,
-          sold_amount: row.sold_amount === "" ? 0 : row.sold_amount
-        }))
+    // --- بخش گزارش ماهانه جدید ---
+    fd.append(
+      "monthly_reports_data",
+      JSON.stringify(
+        monthlyReportsGroups.flatMap((g) =>
+          g.data.map((row, i) => {
+            const rentFixed = Number(g.fixed_workshop_rent || 0);
+            const rentEquip = Number(row.equipment_rent || 0);
+            const mat = Number(row.material_costs || 0);
+            const salary = Number(row.salary_maintenance || 0);
+            const sales = Number(row.sales || 0);
+
+            // 💰 محاسبات فرانت
+            const total = rentFixed + rentEquip + mat + salary; // ارزش کل کارگاه
+            const profit = sales - total; // سود
+            const percentage = sales > 0 ? profit / sales : 0; // درصد سود
+
+            return {
+              year: g.year,
+              month: i + 1,
+              sales: sales,
+              production_amount: row.production_amount === "" ? 0 : Number(row.production_amount),
+
+              fixed_workshop_rent: rentFixed,
+              equipment_rent: rentEquip,
+              material_costs: mat,
+              salary_maintenance: salary,
+
+              // 👇 داده‌های محاسبه‌شده فرانت
+              total_monthly_value: total,
+              profit: profit,
+              profit_percentage: percentage,
+            };
+          })
+        )
       )
-    ));
+    );
 
-    
 
-    // --- 🖼️ ۶. فایل‌ها ---
-    if (coverImage) fd.append("cover_image", coverImage); // کاور اصلی
-    
-    // تصاویر گالری
 
-    gallery.forEach((file, index) => {
-        if (file && typeof file === 'object' && file.name) {
-            fd.append("uploaded_images", file);
-            console.log(`Appending gallery image ${index}:`, file.name);
-        }
+    // --- فایل‌ها ---
+    if (coverImage) fd.append("cover_image", coverImage);
+    gallery.forEach((file) => {
+      if (file && typeof file === "object" && file.name) {
+        fd.append("uploaded_images", file);
+      }
     });
 
-    // --- 🚀 ارسال به سرور ---
+    // --- ارسال نهایی ---
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/workshops/`, fd, {
         headers: {
@@ -390,616 +588,907 @@ export default function CreateWorkshop({ onCreated }) {
       if (onCreated) onCreated();
     } catch (err) {
       console.error("❌ خطا در ثبت:", err.response?.data || err.message);
-      alert("❌ خطا در ثبت کارگاه");
+      alert("❌ خطا در ثبت کارگاه: " + JSON.stringify(err.response?.data || err.message));
     }
-  };
+  }; // ✅ بستن تابع handleSubmit
 
 
   function exportEmptyFormJSON() {
-  const emptyForm = {
-    ...form,
-    products,
-    teamCategories,
-    manager,
-    investments,
-  };
-  const jsonContent = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(emptyForm, null, 2));
-  const link = document.createElement("a");
-  link.setAttribute("href", jsonContent);
-  link.setAttribute("download", "empty_form.json");
-  document.body.appendChild(link);
-  link.click();
-}
+    // ✅ این ساختار تضمین می‌کنه همه کلیدها حتی اگه تهی باشن، در فایل باشن
+    const emptyForm = {
+      title: form.title || "",
+      description: form.description || "",
+      product_type: form.product_type || "",
+      category: form.category || "",
+      province: form.province || "",
+      ownership_type: form.ownership_type || "",
+      contact_number: form.contact_number || "",
+      website: form.website || "",
+      email: form.email || "",
+      location: form.location || "",
+      sales_representative: form.sales_representative || "",
+      area: form.area || "",
+      required_capital: form.required_capital || "",
+      total_members: form.total_members || "",
+
+      // 👇 بخش‌های چندگانه
+      products: products.length
+        ? products
+        : [{ name: "", monthly_volume: "", customers: [{ name: "", monthly_order_volume: "" }] }],
+
+      team_categories: teamCategories.length
+        ? teamCategories
+        : [{ category_name: "", count: "" }],
+
+      manager: manager.name || manager.description
+        ? manager
+        : { name: "", description: "" },
+
+      investments: investments.length
+        ? investments
+        : [{ amount: "", purpose: "" }]
+    };
+
+    const jsonContent =
+      "data:application/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(emptyForm, null, 2));
+
+    const link = document.createElement("a");
+    link.setAttribute("href", jsonContent);
+    link.setAttribute("download", "empty_form.json");
+    document.body.appendChild(link);
+    link.click();
+  }
 
 
-function importFromJSON(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    try {
-      const data = JSON.parse(event.target.result);
-      
-      if (data) {
-        setForm(prev => ({ ...prev, ...data }));
-        if (data.products) setProducts(data.products);
-        if (data.teamCategories) setTeamCategories(data.teamCategories);
-        if (data.manager) setManager(data.manager);
-        if (data.investments) setInvestments(data.investments);
-        alert("✅ فرم با موفقیت پر شد.");
+  
+  // ✅ وارد کردن فرم از JSON با پاک‌سازی فقط فیلدهای عددی فرم و زیرمجموعه‌ها
+  function importFromJSON(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+
+        if (data) {
+          // 🔧 تابع پاک‌کننده‌ی اعداد
+          const cleanNumericString = (val) => {
+            if (!val) return "";
+            return val
+              .toString()
+              .replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)) // تبدیل اعداد فارسی
+              .replace(/[^\d]/g, ""); // حذف هرچیزی غیر از رقم
+          };
+
+          // 🧾 فقط فیلدهای عددی فرم اصلی
+          const numericKeys = ["area", "required_capital", "total_members"];
+          numericKeys.forEach((key) => {
+            if (data[key]) data[key] = cleanNumericString(data[key]);
+          });
+
+          // 🏭 محصولات و مشتری‌ها
+          if (data.products) {
+            data.products.forEach((p) => {
+              p.monthly_volume = cleanNumericString(p.monthly_volume);
+              if (p.customers) {
+                p.customers.forEach((c) => {
+                  c.monthly_order_volume = cleanNumericString(c.monthly_order_volume);
+                });
+              }
+            });
+          }
+
+          // 👥 نیروی انسانی
+          if (data.team_categories) {
+            data.team_categories.forEach((t) => {
+              t.count = cleanNumericString(t.count);
+            });
+          }
+
+          // 💰 سرمایه‌گذاری‌ها
+          if (data.investments) {
+            data.investments.forEach((i) => {
+              i.amount = cleanNumericString(i.amount);
+            });
+          }
+
+          // 📋 ثبت در state‌ها
+          setForm((prev) => ({ ...prev, ...data }));
+          if (data.products) setProducts(data.products);
+          if (data.team_categories) setTeamCategories(data.team_categories);
+          if (data.manager) setManager(data.manager);
+          if (data.investments) setInvestments(data.investments);
+
+          alert("✅ فرم با موفقیت پر شد.");
+        }
+      } catch (err) {
+        alert("❌ خطا در خواندن فایل JSON");
       }
-    } catch (err) {
-      alert("❌ خطا در خواندن فایل JSON");
-    }
-  };
-  reader.readAsText(file);
-}
+    };
 
+    reader.readAsText(file);
+  }
 
 
   return (
-    <Paper sx={{ direction: "rtl", textAlign: "right", p: 3, borderRadius: 2, background: "#f9f9f9" }}>
-      <Typography variant="h6" gutterBottom>ایجاد کارگاه جدید</Typography>
-      <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        
-        {/* === اطلاعات کلی === */}
-        <Typography>عنوان کارگاه:</Typography>
-        <TextField name="title" value={form.title} onChange={handleChange} />
-
-        <Typography>توضیحات:</Typography>
-        <TextField name="description" value={form.description} onChange={handleChange} multiline rows={3} sx={rtlInput}/>
-
-
-        <Divider sx={{ my: 2 }}>
-            <Chip label="اطلاعات تکمیلی" />
-        </Divider>
-
-        <Grid item xs={12} sm={4}>
-                <FormControl fullWidth sx={{ minWidth: 250 }}>
-                  <Select
-                    sx={{
-                      width: "250px",
-                      "& .MuiSelect-select": {
-                        direction: "rtl",
-                        textAlign: "right",
-                      }
-                    }}
-                    value={form.category || ""}
-                    name="category"
-                    onChange={handleChange}
-                    displayEmpty
-                    renderValue={(selected) => {
-                      if (!selected) {
-                        return <span style={{ color: "#888", fontSize: "16px" }}>دسته‌بندی را انتخاب کنید</span>;
-                      }
-                      const labels = {
-                        industrial: "صنعتی",
-                        medical: "پزشکی",
-                        agriculture: "کشاورزی",
-                        livestock: "دامداری",
-                        software: "نرم‌افزار",
-                        hardware: "سخت‌افزار",
-                        electronics: "الکترونیک"
-                      };
-                      return labels[selected] || selected;
-                    }}
-                    MenuProps={{
-                      PaperProps: {
-                        sx: {
-                          direction: "rtl",
-                          textAlign: "right",
-                        }
-                      }
-                    }}
-                  >
-                    <MenuItem value=""> </MenuItem>
-                    <MenuItem value="industrial">صنعتی</MenuItem>
-                    <MenuItem value="medical">پزشکی</MenuItem>
-                    <MenuItem value="agriculture">کشاورزی</MenuItem>
-                    <MenuItem value="livestock">دامداری</MenuItem>
-                    <MenuItem value="software">نرم‌افزار</MenuItem>
-                    <MenuItem value="hardware">سخت‌افزار</MenuItem>
-                    <MenuItem value="electronics">الکترونیک</MenuItem>
-                  </Select>
-                </FormControl>
-            </Grid>
-
-        <Typography>استان:</Typography>
-        <FormControl fullWidth>
-          <Select
-            value={form.address || ""}
-            name="address"
-            onChange={handleChange}
-            displayEmpty
-            renderValue={(selected) =>
-              !selected ? <span style={{ color: "#888" }}>استان را انتخاب کنید</span> : selected
-            }
+    <>
+      <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+        <Paper
+          sx={{
+            direction: "rtl",
+            textAlign: "right",
+            p: 3,
+            borderRadius: 2,
+            background: "#f9f9f9",
+          }}
+          >
+          <Typography variant="h6" gutterBottom>ایجاد کارگاه جدید</Typography>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
             sx={{
-              "& .MuiSelect-select": {
-                direction: "rtl",
-                textAlign: "right",
-              }
-            }}
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  direction: "rtl",
-                  textAlign: "right",
-                }
-              }
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              direction: "rtl",      // اطمینان از جهت فرم
+              textAlign: "right",
             }}
           >
-            <MenuItem value=""><em>انتخاب کنید</em></MenuItem>
-            <MenuItem value="تهران">تهران</MenuItem>
-            <MenuItem value="اصفهان">اصفهان</MenuItem>
-            <MenuItem value="شیراز">شیراز</MenuItem>
-          </Select>
-        </FormControl>
-
-        <Grid item xs={12} sm={6}>
-                <TextField
-                    fullWidth
-                    label="موقعیت مکانی"
-                    name="location"
-                    value={form.location}
-                    onChange={handleChange}
-                    sx={rtlInput}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Business />
-                            </InputAdornment>
-                        ),
-                    }}
+        
+            {/* === اطلاعات کلی === */}
+            <Grid container spacing={3} disableEqualOverflow sx={{ mt: 2 }}>
+              <Grid item sx={{ width: '30%' }}>
+                <Typography>عنوان کارگاه:</Typography>
+                <TextField fullWidth name="title" value={form.title} onChange={handleChange}
+                  InputProps={{ sx: { direction: "rtl", textAlign: "right" } }}
                 />
-            </Grid>
+              </Grid>
 
+              <Grid item sx={{ width: '60%' }}>
+                <Typography>توضیحات:</Typography>
+                <TextField fullWidth name="description" value={form.description} onChange={handleChange} multiline rows={3}
+                  InputProps={{ sx: { direction: "rtl", textAlign: "right" } }}
+                />
 
-
-        <Typography>نمایندگی فروش:</Typography>
-        <TextField name="representative" value={form.sales_representative} onChange={handleChange} />
-
-        
-        <Typography>تاریخ تاسیس:</Typography>
-        {/* ✅✅✅ این بلوک کد جایگزین شده است ✅✅✅ */}
-        <DatePicker
-            calendar={persian}
-            locale={persian_fa}
-            style={{
-                direction: "rtl",
-                width: "100%",
-                padding: "10px",
-                fontSize: "16px"
-            }}
-            value={selectedDate}
-            onChange={setSelectedDate}
-            placeholder="تاریخ تاسیس"
-        />
-
-
-        
-
-        <Grid container spacing={2}>
-
-            
-            <Grid item xs={12} sm={6}>
                 <TextField
-                    fullWidth
-                    label="نوع محصول/خدمات"
+                    label="نوع محصول"
                     name="product_type"
                     value={form.product_type}
                     onChange={handleChange}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Category />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
+                    fullWidth
+                    InputProps={{ sx: { direction: "rtl", textAlign: "right" } }}
+                  />
+              </Grid>
+
+              
+
             </Grid>
+
+            <Divider sx={{ my: 2 }}>
+                <Chip label="اطلاعات تکمیلی" />
+            </Divider>
+
+
+            <Box sx={{ direction: 'rtl', textAlign: 'right', px: 1 }}>
+            {/* --- پنج ستون بالا مطابق دیتیل --- */}
+            <Grid container spacing={1} sx={{ mt: 1, alignItems: 'flex-start' }}>
+              
+              {/* ستون ۱: دسته‌بندی / استان */}
+              <Grid item xs={12} sm={6} md={2.25}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  <FormControl fullWidth size="small" sx={{ '& .MuiInputBase-root': { height: 34, fontSize: '1rem' } }}>
+                    <InputLabel>دسته‌بندی</InputLabel>
+                    <Select
+                      name="category"
+                      value={form.category}
+                      onChange={handleChange}
+                    >
+                      <MenuItem value="industrial">صنعتی</MenuItem>
+                      <MenuItem value="medical">پزشکی</MenuItem>
+                      <MenuItem value="agriculture">کشاورزی</MenuItem>
+                      <MenuItem value="livestock">دامداری</MenuItem>
+                      <MenuItem value="software">نرم‌افزار</MenuItem>
+                      <MenuItem value="hardware">سخت‌افزار</MenuItem>
+                      <MenuItem value="electronics">الکترونیک</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    size="small"
+                    label="استان"
+                    name="province"
+                    value={form.province}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{ '& .MuiInputBase-root': { height: 34, fontSize: '1rem' } }}
+                  />
+                </Box>
+              </Grid>
+
+              {/* ستون ۲: نوع مالکیت / شماره تماس */}
+              <Grid item xs={12} sm={6} md={2.25}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  
+                  <TextField
+                    size="small"
+                    label="نوع مالکیت"
+                    name="ownership_type"
+                    value={form.ownership_type}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{ '& .MuiInputBase-root': { height: 34, fontSize: '1rem' } }}
+                  />
+                  
+                  <TextField
+                    size="small"
+                    label="شماره تماس"
+                    name="contact_number"
+                    value={form.contact_number}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{ '& .MuiInputBase-root': { height: 34, fontSize: '1rem' } }}
+                  />
+                </Box>
+              </Grid>
+
+              {/* ستون ۳: وبسایت / ایمیل */}
+              <Grid item xs={12} sm={6} md={2.25}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  <TextField
+                    size="small"
+                    label="وبسایت"
+                    name="website"
+                    value={form.website}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{ '& .MuiInputBase-root': { height: 34, fontSize: '1rem' } }}
+                  />
+                  <TextField
+                    size="small"
+                    label="ایمیل"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{ '& .MuiInputBase-root': { height: 34, fontSize: '1rem' } }}
+                  />
+                </Box>
+              </Grid>
+
+              {/* ستون ۴: نیروها / مساحت کارگاه */}
+              <Grid item xs={12} sm={6} md={2.25}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  <TextField
+                    size="small"
+                    label="تعداد نیروها"
+                    value={calcTeamTotal()}
+                    InputProps={{
+                      readOnly: true,
+                      endAdornment: <InputAdornment position="end">نفر</InputAdornment>,
+                    }}
+                    sx={{ width: 180, '& .MuiInputBase-root': { height: 34, fontSize: '1rem' } }}
+                  />
+
+
+
+                  <TextField
+                    size="small"
+                    label="مساحت کارگاه/سالن"
+                    name="area"
+                    value={form.area ? form.area.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""}
+                    onChange={(e) => {
+                      // حذف هر چیزی غیر از رقم
+                      const raw = e.target.value.replace(/[^\d]/g, "");
+                      setForm(prev => ({ ...prev, area: raw }));
+                    }}
+                    InputProps={{
+                      endAdornment: form.area ? (   // ← فقط وقتی عدد داره واحدو نشون بده
+                        <InputAdornment position="end" sx={{ fontSize: '0.9rem' }}>
+                          متر مربع
+                        </InputAdornment>
+                      ) : null,
+                      sx: { '& input': { textAlign: 'center' } },
+                    }}
+                    sx={{ 
+                      width: 180, 
+                      '& .MuiInputBase-root': { height: 34, fontSize: '1rem' } 
+                    }}
+                  />
+
+
+
+
+                </Box>
+              </Grid>
+
+              {/* ستون ۵: سرمایه مورد نیاز / تاریخ تاسیس */}
+              <Grid item xs={12} sm={6} md={2.25}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  <TextField
+                    size="small"
+                    label="سرمایه مورد نیاز"
+                    value={calcTotalInvestment()}
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                    fullWidth
+                    sx={{ width: "100%", '& .MuiInputBase-root': { height: 34, fontSize: '1rem' } }}
+                  />
+
+                  <DatePicker
+                    calendar={persian}
+                    locale={persian_fa}
+                    value={selectedDate}
+                    onChange={setSelectedDate}
+                    placeholder="تاریخ تأسیس"
+                    style={{ width: '100%', height: '34px', fontSize: '1rem', boxSizing: 'border-box' }}
+                    containerStyle={{ width: '100%' }}
+                  />
+
+                  
+                </Box>
+              </Grid>
+            </Grid>
+          
+
+
+
+
+
+              {/* --- بخش پایین: موقعیت / سرمایه‌گذاری --- */}
+              <Grid container spacing={1.5} sx={{ mt: 2 }}>
+                {/* سمت راست */}
+                <Grid item xs={12} md={6}>
+                  <Paper variant="outlined" sx={{ p: 1.5 }}>
+                    <TextField
+                      size="small"
+                      label="موقعیت مکانی"
+                      name="location"
+                      value={form.location}
+                      onChange={handleChange}
+                      fullWidth
+                      sx={{ mb: 1 }}
+                      InputProps={{ sx: { '& input': { textAlign: 'right' } } }}
+                    />
+                    <TextField
+                      size="small"
+                      label="نمایندگی فروش اختصاصی"
+                      name="sales_representative"
+                      value={form.sales_representative}
+                      onChange={handleChange}
+                      fullWidth
+                      InputProps={{ sx: { '& input': { textAlign: 'right' } } }}
+                    />
+                  </Paper>
+                </Grid>
+
+                {/* سمت چپ */}
+                <Grid item xs={12} md={6}>
+                  <Paper variant="outlined"    sx={{ p: 1.5, width: '110%', maxWidth: '900px', mx: 'auto' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, fontSize: '0.9rem' }}>
+                      💰 بخش‌های سرمایه‌گذاری
+                    </Typography>
+                    {investments.map((inv, i) => (
+                      <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+                        <TextField
+                          size="small"
+                          label="مبلغ"
+                          value={inv.amount ? inv.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""}
+                          onChange={(e) => {
+                            // فقط عددها رو نگه دار
+                            const raw = e.target.value.replace(/[^\d]/g, "");
+                            const updated = [...investments];
+                            updated[i].amount = raw;
+                            setInvestments(updated);
+                          }}
+                          InputProps={{
+                            endAdornment: inv.amount ? (
+                              <InputAdornment position="end" sx={{ fontSize: '0.9rem' }}>
+                                تومان
+                              </InputAdornment>
+                            ) : null,
+                            sx: { "& input": { textAlign: "left" } },
+                          }}
+                          sx={{
+                            flex: 1.5,
+                            "& .MuiInputBase-root": { height: 34, fontSize: "1rem" },
+                          }}
+                        />
+
+
+
+
+                        <TextField
+                          size="small"
+                          label="هدف"
+                          value={inv.purpose}
+                          onChange={(e) => {
+                            const updated = [...investments];
+                            updated[i].purpose = e.target.value;
+                            setInvestments(updated);
+                          }}
+                          sx={{ flex: 2 }}
+                        />
+                        <IconButton onClick={() => removeInvestment(i)}>
+                          <RemoveCircle color="error" />
+                        </IconButton>
+                      </Box>
+                    ))}
+                    <Button startIcon={<AddCircle />} onClick={addInvestment} sx={{ direction: 'rtl', mt: 0.5, fontSize: '0.8rem' }}>
+                      افزودن مرحله سرمایه‌گذاری
+                    </Button>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+
+
+
 
             
-        </Grid>
-
-        <Divider sx={{ my: 2 }}>
-            <Chip label="اطلاعات مالی و راه های ارتباطی" />
-        </Divider>
-        <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-                <TextField
-                    fullWidth
-                    label="فروش سال گذشته (تومان)"
-                    name="last_year_sales"
-                    type="number"
-                    value={form.last_year_sales}
-                    onChange={handleChange}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <MonetizationOn />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-                <TextField
-                    fullWidth
-                    label="سود سال گذشته (تومان)"
-                    name="last_year_profit"
-                    type="number"
-                    value={form.last_year_profit}
-                    onChange={handleChange}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Assessment />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
-            </Grid>
-             <Grid item xs={12} sm={6}>
-                <TextField
-                    fullWidth
-                    label="سرمایه مورد نیاز (تومان)"
-                    name="required_capital"
-                    type="number"
-                    value={form.required_capital}
-                    onChange={handleChange}
-                />
-            </Grid>
-            <Typography>شماره تماس:</Typography>
-            <TextField name="contact_number" value={form.contact_number} onChange={handleChange} />
-
-            <Typography>وبسایت:</Typography>
-            <TextField name="website" value={form.website} onChange={handleChange} />
-
-            <Typography>ایمیل:</Typography>
-            <TextField name="email" value={form.email} onChange={handleChange} />
-
-            <Grid item xs={12} sm={6}>
-                <TextField
-                    fullWidth
-                    label="درصد سود برای سرمایه‌گذار"
-                    name="profit_percentage"
-                    type="number"
-                    value={form.profit_percentage}
-                    onChange={handleChange}
-                />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-                <TextField
-                    fullWidth
-                    label="درصد پوشش سرمایه"
-                    name="funded_percentage"
-                    type="number"
-                    value={form.funded_percentage}
-                    onChange={handleChange}
-                />
-            </Grid>
-             <Grid item xs={12} sm={6}>
-                <TextField
-                    fullWidth
-                    label="مدت قرارداد (ماه)"
-                    name="contract_duration"
-                    type="number"
-                    value={form.contract_duration}
-                    onChange={handleChange}
-                />
-            </Grid>
-             <Grid item xs={12} sm={6}>
-                <TextField
-                    fullWidth
-                    label="شرکت/نمایندگی مرتبط"
-                    name="agency"
-                    value={form.agency}
-                    onChange={handleChange}
-                />
-            </Grid>
-            <Grid item xs={12}>
-                <TextField
-                    fullWidth
-                    label="جزئیات تکمیلی قرارداد"
-                    name="contract_details"
-                    value={form.contract_details}
-                    onChange={handleChange}
-                    multiline
-                    rows={3}
-                />
-            </Grid>
-        </Grid>
-
-        
-        <Divider />
-
-        {/* === محصولات و مشتریان === */}
-        <Typography variant="h6">📦 محصولات</Typography>
-        {products.map((prod, i) => (
-          <Box key={i} sx={{ border: "1px solid #ccc", p: 2, borderRadius: 2, mb: 2 }}>
-            <TextField fullWidth label="نام محصول" value={prod.name} onChange={(e) => {
-              const newP = [...products];
-              newP[i].name = e.target.value;
-              setProducts(newP);
-            }} />
-            <TextField fullWidth label="حجم تولید ماهانه" value={prod.monthly_volume} onChange={(e) => {
-              const newP = [...products];
-              newP[i].monthly_volume = e.target.value;
-              setProducts(newP);
-            }} />
-            {/* مشتری‌ها داخل هر محصول */}
-            <Button onClick={() => {
-              const newP = [...products];
-              newP[i].customers.push({ name: "", monthly_order_volume: "" });
-              setProducts(newP);
-            }}>➕ افزودن مشتری</Button>
-            {prod.customers.map((cust, ci) => (
-              <Box key={ci} sx={{ display: "flex", gap: 1, mb: 1 }}>
-                <TextField label="نام مشتری" value={cust.name} onChange={(e) => {
-                  const newP = [...products];
-                  newP[i].customers[ci].name = e.target.value;
-                  setProducts(newP);
-                }} />
-                <TextField label="حجم سفارش ماهانه" value={cust.monthly_order_volume} onChange={(e) => {
-                  const newP = [...products];
-                  newP[i].customers[ci].monthly_order_volume = e.target.value;
-                  setProducts(newP);
-                }} />
-              </Box>
-            ))}
-            <IconButton onClick={() => removeProduct(i)}><RemoveCircle color="error" /></IconButton>
-          </Box>
-        ))}
-        <Button startIcon={<AddCircle />} onClick={addProduct}>افزودن محصول</Button>
-
-        <Divider />
-
-        {/* === تیم === */}
-        <Typography variant="h6">👥 نیروی انسانی</Typography>
-        {teamCategories.map((cat, i) => (
-          <Box key={i} sx={{ display: "flex", gap: 1 }}>
-            <TextField label="دسته" value={cat.category_name} onChange={(e) => {
-              const newC = [...teamCategories];
-              newC[i].category_name = e.target.value;
-              setTeamCategories(newC);
-            }} />
-            <TextField label="تعداد" value={cat.count} onChange={(e) => {
-              const newC = [...teamCategories];
-              newC[i].count = e.target.value;
-              setTeamCategories(newC);
-            }} />
-            <IconButton onClick={() => removeTeamCategory(i)}><RemoveCircle color="error" /></IconButton>
-          </Box>
-        ))}
-        <Button startIcon={<AddCircle />} onClick={addTeamCategory}>افزودن دسته تیم</Button>
-
-        <Typography>مدیرعامل</Typography>
-        <TextField label="نام مدیر" value={manager.name} onChange={(e) => setManager({...manager, name: e.target.value})} />
-        <TextField label="توضیح کوتاه" value={manager.description} onChange={(e) => setManager({...manager, description: e.target.value})} />
-
-        <Divider />
-
-        {/* === سرمایه‌گذاری === */}
-        <Typography variant="h6">💰 بخش‌های سرمایه‌گذاری</Typography>
-        {investments.map((inv, i) => (
-          <Box key={i} sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            <TextField label="مبلغ" value={inv.amount} onChange={(e) => {
-              const newI = [...investments];
-              newI[i].amount = e.target.value;
-              setInvestments(newI);
-            }} />
-            <TextField label="هدف" value={inv.purpose} onChange={(e) => {
-              const newI = [...investments];
-              newI[i].purpose = e.target.value;
-              setInvestments(newI);
-            }} />
-            <TextField label="درصد سود" value={inv.profit_percentage} onChange={(e) => {
-              const newI = [...investments];
-              newI[i].profit_percentage = e.target.value;
-              setInvestments(newI);
-            }} />
-            <TextField label="مدت بازگشت (ماه)" value={inv.return_duration_months} onChange={(e) => {
-              const newI = [...investments];
-              newI[i].return_duration_months = e.target.value;
-              setInvestments(newI);
-            }} />
-            <IconButton onClick={() => removeInvestment(i)}><RemoveCircle color="error" /></IconButton>
-          </Box>
-        ))}
-        <Button startIcon={<AddCircle />} onClick={addInvestment}>افزودن مرحله سرمایه‌گذاری</Button>
+            <Divider sx={{ my: 3 }} />
 
 
-<Divider />
+            {/* === محصولات و مشتریان === */}
+            <Typography variant="h6">📦 محصولات</Typography>
 
-<Typography variant="h6">📝 مدیریت فرم کامل</Typography>
-<div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-  <Button onClick={exportEmptyFormJSON}>دانلود فرم خام JSON</Button>
-  <Button component="label">
-    بارگذاری JSON
-    <input type="file" accept=".json" hidden onChange={importFromJSON} />
-  </Button>
-</div>
-
-
-
-        <Divider />
-
-        {/* === گزارش‌های ماهانه === */}
-        <Typography variant="h6" gutterBottom>📊 گزارش‌های ماهانه</Typography>
-
-        <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-          <Button onClick={() => setCopyMode(!copyMode)}>
-            {copyMode ? "حالت ویرایش" : "حالت کپی"}
-          </Button>
-          <Button onClick={exportToCSV}>دانلود CSV</Button>
-          <Button component="label">
-            بارگذاری CSV
-            <input type="file" accept=".csv" hidden onChange={importFromCSV} />
-          </Button>
-          <Button startIcon={<AddCircle />} onClick={handleAddNewYearTable}>
-            افزودن سال جدید
-          </Button>
-        </div>
-
-        {monthlyReportsGroups.map((group, gIdx) => (
-          <div
-            key={gIdx}
-            style={{
-              marginBottom: "24px",
-              border: "1px solid #ddd", // رنگ روشن‌تر
-              borderRadius: "8px",
-              background: "#fff",
-              padding: "10px"
-            }}
-          >
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <FormControl sx={{ minWidth: 120, mb: 2 }}>
-                <Typography sx={{ fontWeight: "bold", mb: 1 }}>سال:</Typography>
-                <Select
-                  value={group.year}
-                  onChange={(e) => handleYearChange(gIdx, e.target.value)}
-                >
-                  {Array.from({ length: 121 }, (_, idx) => {
-                    const year = 1380 + idx;
-                    return (
-                      <MenuItem key={year} value={year}>{year}</MenuItem>
-                    );
-                  })}
-                </Select>
-              </FormControl>
-              <IconButton color="error" onClick={() => handleRemoveYearTable(gIdx)}>
-                <RemoveCircle />
-              </IconButton>
-            </div>
-
-            <div style={{ overflowX: "auto", background: "#fff" }}>
-              <table
-                style={{
-                  borderCollapse: "collapse",
-                  minWidth: "1000px",
-                  textAlign: "center",
-                  width: "100%",
-                  userSelect: copyMode ? "text" : "auto"
+            {products.map((prod, i) => (
+              <Box
+                key={i}
+                sx={{
+                  border: "1px solid #ccc",
+                  p: 2,
+                  borderRadius: 2,
+                  mb: 2,
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: 2,
                 }}
               >
-                <thead>
-                  <tr style={{ background: "#f0f0f0", fontWeight: "bold" }}>
-                    <th style={thStyle}>ماه</th>
-                    <th style={thStyle}>فروش</th>
-                    <th style={thStyle}>سود ناخالص</th>
-                    <th style={thStyle}>سود خالص</th>
-                    <th style={thStyle}>درصد سود</th>
-                    <th style={thStyle}>تعداد تولید شده</th>
-                    <th style={thStyle}>تعداد فروش رفته</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {monthNames.map((month, i) => {
-                    // <<< تغییر جدید: یک استایل مشخص برای سلول ماه تعریف می‌کنیم
-                    const monthTdStyle = {
-                      ...tdStyle,
-                      width: "30px", // عرض دلخواه برای ستون ماه
-                      minWidth: "30px",
-                      maxWidth: "90px",
-                      fontWeight: 'bold', // برای خوانایی بهتر
-                      background: "#f7f7f7" // کمی رنگ متفاوت برای تمایز
-                    };
+                {/* ستون راست: اطلاعات محصول */}
+                <Box sx={{ width: { xs: "100%", md: "48%" } }}>
+                  <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
+                    <TextField
+                      label="نام محصول"
+                      value={prod.name}
+                      onChange={(e) => {
+                        const newP = [...products];
+                        newP[i].name = e.target.value;
+                        setProducts(newP);
+                      }}
+                      sx={{ flex: 6 }} // ۶۰٪
+                    />
 
-                    return (
-                      <tr key={i} style={{ background: i % 2 === 0 ? "#fafafa" : "#fff" }}>
-                        {/* <<< تغییر جدید: از استایل بالا در اینجا استفاده می‌کنیم */}
-                        <td style={monthTdStyle}>{month}</td>
-                        
-                        {["sales", "gross_profit", "net_profit", "profit_percentage", "production_amount", "sold_amount"]
-                          .map((field) => {
-                            
-                            let displayValue = "";
-                            let unit = "تومان";
-                            let columnWidth = 140; 
-                            let maxLength = undefined;
-                            
-                            if (field === "profit_percentage") {
-                              unit = "%";
-                              columnWidth = 40;
-                              maxLength = 3;
-                              displayValue = group.data[i][field]; 
-                            } else if (field === "production_amount" || field === "sold_amount") {
-                              unit = "عدد";
-                              columnWidth = 100;
-                              displayValue = formatNumber(group.data[i][field]);
-                            } else {
-                              unit = "تومان";
-                              columnWidth = 140;
-                              displayValue = formatNumber(group.data[i][field]);
-                            }
+                    <TextField
+                      size="small"
+                      label="حجم تولید ماهانه"
+                      value={
+                        prod.monthly_volume
+                          ? prod.monthly_volume.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                          : ""
+                      }
+                      onChange={(e) => {
+                        // فقط عدد رو نگه می‌داریم
+                        const raw = e.target.value.replace(/[^\d]/g, "");
+                        const updated = [...products];
+                        updated[i].monthly_volume = raw;
+                        setProducts(updated);
+                      }}
+                      InputProps={{
+                        endAdornment: prod.monthly_volume ? (
+                          <InputAdornment position="end" sx={{ fontSize: '0.9rem' }}>
+                            عدد
+                          </InputAdornment>
+                        ) : null,
+                        sx: { "& input": { textAlign: "left" } },
+                      }}
+                      sx={{
+                        flex: 4, // نسبت به نام محصول ۴۰٪
+                        "& .MuiInputBase-root": { height: 34, fontSize: "1rem" },
+                      }}
+                    />
 
-                            const specificTdStyle = {
-                              ...tdStyle, 
-                              width: `${columnWidth}px`,
-                              minWidth: `${columnWidth}px`,
-                              maxWidth: `${columnWidth}px`,
-                            };
+                  </Box>
 
-                            return (
-                              <td style={specificTdStyle} key={field}>
-                                {copyMode ? (
-                                  <span>{displayValue || 0} {group.data[i][field] && unit}</span>
-                                ) : (
-                                  <TextField
-                                    value={displayValue}
-                                    onChange={(e) => {
-                                      let raw = e.target.value.replace(/[^\d]/g, "");
-                                      if (field === "profit_percentage" && raw.length > 3) {
-                                        raw = raw.slice(0, 3);
-                                      }
-                                      handleCellChange(gIdx, i, field, raw);
-                                    }}
-                                    onPaste={(e) => handlePaste(gIdx, i, e)}
-                                    inputProps={{ maxLength: maxLength }}
-                                    InputProps={{
-                                      endAdornment: group.data[i][field] !== "" && (
-                                        <InputAdornment position="end" sx={adornmentStyle}>
-                                          {unit}
-                                        </InputAdornment>
-                                      ),
-                                      sx: { "& input": { textAlign: "center" } }
-                                    }}
-                                    variant="standard"
-                                    style={{ width: "100%" }}
-                                  />
-                                )}
-                              </td>
-                            );
-                          })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                  <IconButton onClick={() => removeProduct(i)}>
+                    <RemoveCircle color="error" />
+                  </IconButton>
+                </Box>
+
+                {/* ستون چپ: مشتری‌ها */}
+                <Box sx={{ width: { xs: "100%", md: "48%" } }}>
+                  {prod.customers.map((cust, ci) => (
+                    <Box key={ci} sx={{ display: "flex", gap: 1, mb: 1 }}>
+                      <TextField
+                        label="نام مشتری"
+                        value={cust.name}
+                        onChange={(e) => {
+                          const newP = [...products];
+                          newP[i].customers[ci].name = e.target.value;
+                          setProducts(newP);
+                        }}
+                        sx={{ flex: 6 }}
+                      />
+                      <TextField
+                        size="small"
+                        label="حجم سفارش ماهانه"
+                        value={
+                          cust.monthly_order_volume
+                            ? cust.monthly_order_volume.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^\d]/g, "");
+                          const updated = [...products];
+                          updated[i].customers[ci].monthly_order_volume = raw;
+                          setProducts(updated);
+                        }}
+                        InputProps={{
+                          endAdornment: cust.monthly_order_volume ? (
+                            <InputAdornment position="end" sx={{ fontSize: '0.9rem' }}>
+                              عدد
+                            </InputAdornment>
+                          ) : null,
+                          sx: { "& input": { textAlign: "left" } },
+                        }}
+                        sx={{
+                          flex: 4,
+                          "& .MuiInputBase-root": { height: 34, fontSize: "1rem" },
+                        }}
+                      />
+
+                    </Box>
+                  ))}
+
+                  <Button
+                    onClick={() => {
+                      const newP = [...products];
+                      newP[i].customers.push({ name: "", monthly_order_volume: "" });
+                      setProducts(newP);
+                    }}
+                  >
+                    ➕ افزودن مشتری
+                  </Button>
+                </Box>
+              </Box>
+            ))}
+
+            <Button startIcon={<AddCircle />} onClick={addProduct}>
+              افزودن محصول
+            </Button>
+
+            <Divider />
+
+            {/* === نیروی انسانی === */}
+            <Typography variant="h6">👥 نیروی انسانی</Typography>
+            <Box sx={{
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              gap: 3
+            }}>
+              {/* ستون راست: دسته‌ها و تعداد */}
+              <Box sx={{ flex: 1 }}>
+                {teamCategories.map((cat, i) => (
+                  <Box key={i} sx={{ display: "flex", gap: 1, mb: 1 }}>
+                    <TextField
+                      size="small"
+                      label="دسته"
+                      value={cat.category_name}
+                      onChange={(e) => {
+                        const newC = [...teamCategories];
+                        newC[i].category_name = e.target.value;
+                        setTeamCategories(newC);
+                      }}
+                      sx={{ flex: 6 }} // ۶۰٪
+                    />
+                    <TextField
+                      size="small"
+                      label="تعداد"
+                      value={
+                        cat.count
+                          ? cat.count.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                          : ""
+                      }
+                      onChange={(e) => {
+                        // فقط رقم قبول کنه
+                        const raw = e.target.value.replace(/[^\d]/g, "");
+                        const newC = [...teamCategories];
+                        newC[i].count = raw;
+                        setTeamCategories(newC);
+                      }}
+                      InputProps={{
+                        endAdornment: cat.count ? (
+                          <InputAdornment position="end" sx={{ fontSize: "0.9rem" }}>
+                            نفر
+                          </InputAdornment>
+                        ) : null,
+                        sx: { "& input": { textAlign: "left" } },
+                      }}
+                      sx={{
+                        flex: 4, // ۴۰٪
+                        "& .MuiInputBase-root": { height: 34, fontSize: "1rem" },
+                      }}
+                    />
+                    <IconButton onClick={() => removeTeamCategory(i)}>
+                      <RemoveCircle color="error" />
+                    </IconButton>
+                  </Box>
+                ))}
+
+                <Button startIcon={<AddCircle />} onClick={addTeamCategory}>
+                  افزودن دسته تیم
+                </Button>
+              </Box>
+
+              {/* ستون چپ: مدیرعامل */}
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle1">مدیرعامل</Typography>
+                <TextField
+                  fullWidth
+                  label="نام مدیر"
+                  value={manager.name}
+                  onChange={(e) => setManager({ ...manager, name: e.target.value })}
+                  sx={{ mb: 1 }}
+                />
+                <TextField
+                  fullWidth
+                  label="توضیح کوتاه"
+                  value={manager.description}
+                  onChange={(e) => setManager({ ...manager, description: e.target.value })}
+                  multiline
+                  rows={3}
+                />
+              </Box>
+            </Box>
+
+            
+
+            <Divider />
+
+            <Typography variant="h6">📝 مدیریت فرم کامل</Typography>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+              <Button onClick={exportEmptyFormJSON}>دانلود فرم خام JSON</Button>
+              <Button component="label">
+                بارگذاری JSON
+                <input type="file" accept=".json" hidden onChange={importFromJSON} />
+              </Button>
             </div>
-          </div>
-        ))}
 
 
-        <Divider />
 
-        {/* === کاور و گالری === */}
-        <Typography>کاور:</Typography>
-        <Button variant="outlined" component="label">انتخاب فایل
-          <input type="file" hidden onChange={(e) => setCoverImage(e.target.files[0])} />
-        </Button>
-        {coverImage && <Typography variant="body2" color="textSecondary">📄 {coverImage.name}</Typography>}
+            <Divider />
 
-        <Typography>تصاویر گالری:</Typography>
-        <Button variant="outlined" component="label">انتخاب فایل‌ها
-          <input type="file" hidden multiple onChange={(e) => setGallery([...e.target.files])} />
-        </Button>
-        {gallery.length > 0 && <ul>{gallery.map((f,i) => <li key={i}>📄 {f.name}</li>)}</ul>}
+            {/* === گزارش‌های ماهانه === */}
+            <Typography variant="h6" gutterBottom>📊 گزارش‌های ماهانه</Typography>
 
-        <Button type="submit" variant="contained" color="primary">ایجاد کارگاه</Button>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+              <Button onClick={() => setCopyMode(!copyMode)}>
+                {copyMode ? "حالت ویرایش" : "حالت کپی"}
+              </Button>
+              <Button onClick={exportToCSV}>دانلود CSV</Button>
+              <Button component="label">
+                بارگذاری CSV
+                <input type="file" accept=".csv" hidden onChange={importFromCSV} />
+              </Button>
+              <Button startIcon={<AddCircle />} onClick={handleAddNewYearTable}>
+                افزودن سال جدید
+              </Button>
+            </div>
+
+
+            {monthlyReportsGroups.map((group, gIdx) => (
+              <div
+                key={gIdx}
+                style={{
+                  marginBottom: "24px",
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  background: "#fff",
+                  padding: "10px",
+                }}
+              >
+                {/* انتخاب سال */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <FormControl sx={{ minWidth: 120, mb: 2 }}>
+                    <Typography sx={{ fontWeight: "bold", mb: 1 }}>سال:</Typography>
+                    <Select
+                      value={group.year}
+                      onChange={(e) => handleYearChange(gIdx, e.target.value)}
+                    >
+                      {Array.from({ length: 121 }, (_, idx) => {
+                        const year = 1380 + idx;
+                        return (
+                          <MenuItem key={year} value={year}>
+                            {year}
+                          </MenuItem>
+                        );
+                      })}
+                    </Select>
+                  </FormControl>
+
+                  <IconButton color="error" onClick={() => handleRemoveYearTable(gIdx)}>
+                    <RemoveCircle />
+                  </IconButton>
+                </div>
+
+                {/* 🏭 هزینه ثابت اجاره سالن / کارگاه */}
+                <Box sx={{ mb: 2 }}>
+                  <Typography sx={{ fontWeight: "bold", mb: 0.5 }}>هزینه ثابت اجاره کارگاه (ماهانه):</Typography>
+                  <TextField
+                    value={formatNumber(group.fixed_workshop_rent || 0)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^\d]/g, "");
+                      handleFixedRentChange(gIdx, raw);
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end" sx={adornmentStyle}>
+                          تومان
+                        </InputAdornment>
+                      ),
+                      sx: { "& input": { textAlign: "center" } },
+                    }}
+                    variant="outlined"
+                    size="small"
+                    sx={{ width: "200px" }}
+                  />
+                </Box>
+
+                {/* جدول ماهانه */}
+                <div style={{ overflowX: "auto", background: "#fff" }}>
+                  <table
+                    style={{
+                      borderCollapse: "collapse",
+                      minWidth: "1100px",
+                      textAlign: "center",
+                      width: "100%",
+                      userSelect: copyMode ? "text" : "auto",
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ background: "#f0f0f0", fontWeight: "bold" }}>
+                        <th style={thStyle}>ماه</th>
+                        <th style={thStyle}>فروش</th>
+                        <th style={thStyle}>تعداد تولید</th>
+                        <th style={thStyle}>اجاره تجهیزات</th>
+                        <th style={thStyle}>مواد اولیه</th>
+                        <th style={thStyle}>حقوق و نگهداری</th>
+                        <th style={thStyle}>ارزش کل کارگاه</th>
+                        <th style={thStyle}>سود</th>
+                        <th style={thStyle}>درصد سود</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {monthNames.map((month, i) => {
+                        const monthTdStyle = {
+                          ...tdStyle,
+                          width: "90px",
+                          minWidth: "90px",
+                          background: "#f7f7f7",
+                          fontWeight: "bold",
+                        };
+
+                        // فیلدهای قابل ویرایش
+                        const fields = [
+                          { key: "sales", unit: "تومان", width: 210 },
+                          { key: "production_amount", unit: "عدد", width: 150 },
+                          { key: "equipment_rent", unit: "تومان", width: 210 },
+                          { key: "material_costs", unit: "تومان", width: 210 },
+                          { key: "salary_maintenance", unit: "تومان", width: 210 },
+                        ];
+
+                        const valueStyle = {
+                          ...tdStyle,
+                          width: "140px",
+                          fontWeight: "bold",
+                          background: "#fafafa",
+                        };
+
+                        return (
+                          <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                            <td style={monthTdStyle}>{month}</td>
+
+                            {fields.map(({ key, unit, width }) => {
+                              const displayValue = formatNumber(group.data[i][key]);
+                              const specificTdStyle = {
+                                ...tdStyle,
+                                width: `${width}px`,
+                                minWidth: `${width}px`,
+                                maxWidth: `${width}px`,
+                              };
+
+                              return (
+                                <td style={specificTdStyle} key={key}>
+                                  {copyMode ? (
+                                    <span>{displayValue || 0} {group.data[i][key] && unit}</span>
+                                  ) : (
+                                    <TextField
+                                      value={displayValue}
+                                      onChange={(e) => {
+                                        let raw = e.target.value.replace(/[^\d]/g, "");
+                                        handleCellChange(gIdx, i, key, raw);
+                                        recalculateTotals(gIdx, i); // 💡 هر بار بعد از تغییر فیلد، محاسبه مجدد
+                                      }}
+                                      onPaste={(e) => handlePaste(gIdx, i, e)}
+                                      InputProps={{
+                                        endAdornment: group.data[i][key] !== "" && (
+                                          <InputAdornment position="end" sx={adornmentStyle}>
+                                            {unit}
+                                          </InputAdornment>
+                                        ),
+                                        sx: { "& input": { textAlign: "center" } },
+                                      }}
+                                      variant="standard"
+                                      style={{ width: "100%" }}
+                                    />
+                                  )}
+                                </td>
+                              );
+                            })}
+
+                            {/* 🧾 ارزش کل کارگاه */}
+                            <td style={valueStyle}>
+                              {formatNumber(group.data[i].total_monthly_value || 0)} تومان
+                            </td>
+
+                            {/* 💵 سود */}
+                            <td style={valueStyle}>
+                              {formatNumber(group.data[i].profit || 0)} تومان
+                            </td>
+
+                            {/* 📊 درصد سود */}
+                            <td
+                              style={{
+                                ...valueStyle,
+                                color: (group.data[i].profit_percentage || 0) >= 0 ? "green" : "red",
+                                whiteSpace: "nowrap", // برای جلوگیری از شکستن خط
+                              }}
+                            >
+                              {
+                                (() => {
+                                  const percentage = group.data[i].profit_percentage || 0;
+                                  if (percentage >= 0) {
+                                    return `${(percentage * 100).toFixed(1)}٪ سود`;
+                                  } else {
+                                    return `${Math.abs(percentage * 100).toFixed(1)}٪ زیان`;
+                                  }
+                                })()
+                              }
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+
+
+
+            <Divider />
+
+            {/* === کاور و گالری === */}
+            <Typography>کاور:</Typography>
+            <Button variant="outlined" component="label">انتخاب فایل
+              <input type="file" hidden onChange={(e) => setCoverImage(e.target.files[0])} />
+            </Button>
+            {coverImage && <Typography variant="body2" color="textSecondary">📄 {coverImage.name}</Typography>}
+
+            <Typography>تصاویر گالری:</Typography>
+            <Button variant="outlined" component="label">انتخاب فایل‌ها
+              <input type="file" hidden multiple onChange={(e) => setGallery([...e.target.files])} />
+            </Button>
+            {gallery.length > 0 && <ul>{gallery.map((f,i) => <li key={i}>📄 {f.name}</li>)}</ul>}
+
+            <Button type="submit" variant="contained" color="primary">ایجاد کارگاه</Button>
+          </Box>
+        </Paper>
       </Box>
-    </Paper>
+    </>
   );
 }

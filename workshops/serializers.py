@@ -107,55 +107,7 @@ class WorkshopSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Workshop
-
-        # تمام فیلدها را به صورت صریح لیست می‌کنیم تا کنترل کامل داشته باشیم
-        fields = (
-            'id', 
-            'owner', 
-            'title', 
-            'description', 
-            'cover_image', 
-            'category',
-            'location', 
-            'start_date', 
-            'last_year_sales', 
-            'last_year_profit', 
-            
-            # === فیلدهای جدید که اضافه می‌کنیم ===
-            'agency', 
-            'contact_number',
-            'website',
-            'email',
-            'product_type', 
-            'required_capital',
-            'profit_percentage', 
-            'funded_percentage',
-            'contract_duration', 
-            'contract_details',
-            # ==================================
-            
-            'created_at', 
-            'updated_at', 
-            
-            # --- فیلدهای تودرتو (Nested) برای نمایش ---
-            'images', 
-            'products', 
-            'team_categories', 
-            'manager', 
-            'investments', 
-            'monthly_reports',
-            # --- فیلدهای فقط نوشتاری (Write-Only) برای دریافت از فرانت‌اند ---
-            # این‌ها از فایل قبلی شما حذف شده بودند، آنها را برمی‌گردانیم
-            'products_data', 
-            'team_categories_data', 
-            'manager_data', 
-            'investments_data', 
-            'monthly_reports_data', 
-            'gallery_images',
-            'sales_representative',
-            'address',
-            'uploaded_images',
-        )
+        fields = '__all__'
         read_only_fields = ('owner', 'created_at', 'updated_at')
         
 
@@ -169,8 +121,7 @@ class WorkshopSerializer(serializers.ModelSerializer):
     def validate(self, data):
         # فیلدهای مالی که اگر خالی باشند باید None شوند
         decimal_fields = [
-            'last_year_sales', 'last_year_profit', 'required_capital',
-            'profit_percentage', 'contract_duration'
+            'required_capital',
         ]
         
         for field in decimal_fields:
@@ -226,7 +177,9 @@ class WorkshopSerializer(serializers.ModelSerializer):
         # ذخیره گزارش‌های ماهانه
         reports_list = json.loads(monthly_reports_str)
         for report_item in reports_list:
-            MonthlyReport.objects.create(workshop=workshop, **report_item)
+            serializer = MonthlyReportSerializer(data={**report_item, 'workshop': workshop.id})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
             
         # مرحله ۴: ذخیره تصاویر گالری
         for image_file in uploaded_images:

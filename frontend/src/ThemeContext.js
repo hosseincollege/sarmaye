@@ -1,57 +1,37 @@
-// src/ThemeContext.js
-import React, { createContext, useState, useMemo, useEffect } from "react";
-import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
+import React, { createContext, useState, useEffect } from 'react';
 
-export const ThemeModeContext = createContext();
+// 1. ایجاد Context
+export const ThemeContext = createContext();
 
-export default function ThemeModeProvider({ children }) {
-  // وضعیت تم: 'light', 'dark', یا 'system'
-  const [mode, setMode] = useState(localStorage.getItem("themeMode") || "system");
+// 2. ساخت Provider Component
+export const ThemeProvider = ({ children }) => {
+  // مقدار اولیه را از حافظه محلی (localStorage) می‌خوانیم. اگر وجود نداشت، 'system' را به عنوان پیش‌فرض قرار می‌دهیم.
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
 
-  // تشخیص تم سیستم
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const resolvedMode = mode === "system" ? (prefersDark ? "dark" : "light") : mode;
-
-  // وقتی کاربر تم رو عوض می‌کنه، توی localStorage ذخیره کن
-  const setThemeMode = (newMode) => {
-    setMode(newMode);
-    localStorage.setItem("themeMode", newMode);
-  };
-
-  // لیسنر برای تغییر تم سیستم
+  // 3. استفاده از useEffect برای اعمال تغییرات در DOM
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => setMode((prev) =>
-      prev === "system" ? "system" : prev
-    );
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
+    const root = window.document.documentElement; // این همان تگ <html> است
 
-  // ساخت تم MUI
-  const theme = useMemo(
-    () =>
-      createTheme({
-        direction: "rtl", // چون سایتت فارسیه
-        typography: {
-          fontFamily: "Vazirmatn, Arial",
-        },
-        palette: {
-          mode: resolvedMode,
-          primary: {
-            main: "#1976d2",
-          },
-        },
-      }),
-    [resolvedMode]
-  );
+    // بررسی می‌کنیم که آیا باید تم تاریک اعمال شود یا نه
+    const isDark =
+      theme === 'dark' ||
+      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
+    // ابتدا کلاس‌های قبلی را حذف می‌کنیم تا تداخل نکنند
+    root.classList.remove(isDark ? 'light' : 'dark');
+    
+    // کلاس جدید را بر اساس وضعیت isDark اضافه می‌کنیم
+    root.classList.add(isDark ? 'dark' : 'light');
+    
+    // انتخاب کاربر را در localStorage ذخیره می‌کنیم تا در بازدیدهای بعدی به یاد بماند
+    localStorage.setItem('theme', theme);
+
+  }, [theme]); // این افکت هر زمان که متغیر theme تغییر کند، دوباره اجرا می‌شود
+
+  // 4. ارائه مقدار theme و تابع setTheme به کامپوننت‌های فرزند
   return (
-    <ThemeModeContext.Provider value={{ mode, setThemeMode }}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
-    </ThemeModeContext.Provider>
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
   );
-}
+};
